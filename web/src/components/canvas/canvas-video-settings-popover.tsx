@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Settings2 } from "lucide-react";
-import { Button } from "antd";
+import { Button } from "@/components/ui/heroui-compat";
 
 import { VideoSettingsPanel, videoModeLabel, videoResolutionLabel, videoSecondsLabel, videoSizeLabel } from "@/components/video-settings-panel";
 import { canvasThemes } from "@/lib/canvas-theme";

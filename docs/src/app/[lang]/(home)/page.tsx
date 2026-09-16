@@ -1,14 +1,8 @@
 import Link from 'next/link';
 import { ArrowUpRight, BookOpen, Rocket } from 'lucide-react';
-import { appNames, gitConfig } from '@/lib/shared';
+import { appNames } from '@/lib/shared';
 import { localizePath, type Locale } from '@/lib/i18n';
 import type { Metadata } from 'next';
-
-const githubUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}`;
-const demoUrl = 'https://canvas.best/';
-const starHistoryUrl = `https://www.star-history.com/?repos=${gitConfig.user}%2F${gitConfig.repo}&type=date`;
-const starHistoryChart = `https://api.star-history.com/chart?repos=${gitConfig.user}/${gitConfig.repo}&type=date&transparent=true`;
-const darkStarHistoryChart = `${starHistoryChart}&theme=dark`;
 
 const previewImages = [
   {
@@ -31,30 +25,22 @@ const previewImages = [
 
 const messages = {
   en: {
-    eyebrow: 'Open-source AI image creation workspace',
+    eyebrow: 'Visora AI creative workspace',
     center: 'Documentation',
-    description: 'An infinite canvas for image creation that brings canvas composition, AI generation, reference editing, prompt libraries, and reusable assets into one workflow.',
+    description: 'Visora AI brings canvas composition, AI generation, reference editing, prompt libraries, and reusable assets into one browser workflow.',
     quickStart: 'Quick Start',
-    demo: 'Live Demo',
-    gallery: 'Gallery',
+    gallery: 'Workspace Preview',
     features: 'Explore Features',
-    previewAlt: 'Infinite Canvas preview',
-    contributors: 'Contributors',
-    contributorsDescription: 'Thank you to everyone who has contributed to this project',
-    contributorsAlt: 'Contributor avatars',
+    previewAlt: 'Visora AI workspace preview',
   },
   'zh-CN': {
-    eyebrow: '开源 AI 图片创作工作台',
+    eyebrow: '映序 AI 创作工作台',
     center: '文档中心',
-    description: '面向图片创作的无限画布，把画布编排、AI 生成、参考图编辑、提示词库和素材沉淀放在同一个工作流里。',
+    description: '映序（Visora AI）把画布编排、AI 生成、参考图编辑、提示词库和素材沉淀放在同一个浏览器工作流里。',
     quickStart: '快速开始',
-    demo: '在线体验',
-    gallery: '效果展示',
+    gallery: '工作台预览',
     features: '功能介绍',
-    previewAlt: '无限画布效果图',
-    contributors: '开发贡献者',
-    contributorsDescription: '感谢所有为本项目做出贡献的开发者',
-    contributorsAlt: '开发贡献者头像',
+    previewAlt: '映序工作台效果图',
   },
 };
 
@@ -87,24 +73,6 @@ export default async function HomePage({ params }: PageProps<'/[lang]'>) {
               <BookOpen className="size-4" />
               {text.quickStart}
             </Link>
-            <a
-              href={githubUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 transition hover:border-zinc-900 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-500 dark:hover:bg-zinc-900"
-            >
-              <img src="/github.svg" alt="" className="size-4" />
-              GitHub
-            </a>
-            <a
-              href={demoUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 transition hover:border-zinc-900 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-500 dark:hover:bg-zinc-900"
-            >
-              {text.demo}
-              <ArrowUpRight className="size-4" />
-            </a>
           </div>
         </div>
 
@@ -119,11 +87,9 @@ export default async function HomePage({ params }: PageProps<'/[lang]'>) {
 
       <section className="mt-14">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-zinc-950 dark:text-zinc-50 md:text-3xl">
-              {text.gallery}
-            </h2>
-          </div>
+          <h2 className="text-2xl font-semibold text-zinc-950 dark:text-zinc-50 md:text-3xl">
+            {text.gallery}
+          </h2>
           <Link
             href={localizePath(locale, '/docs/overview/features')}
             className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-zinc-800 transition hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-white"
@@ -145,63 +111,6 @@ export default async function HomePage({ params }: PageProps<'/[lang]'>) {
           ))}
         </div>
       </section>
-
-      <section className="mx-auto mt-16 w-full max-w-4xl text-center">
-        <h2 className="text-2xl font-semibold text-zinc-950 dark:text-zinc-50 md:text-3xl">
-          {text.contributors}
-        </h2>
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          {text.contributorsDescription}
-        </p>
-        <div className="mt-7 flex justify-center">
-          <a
-            href={`${githubUrl}/graphs/contributors`}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex max-w-full"
-          >
-            <img
-              src={`https://contrib.rocks/image?repo=${gitConfig.user}/${gitConfig.repo}`}
-              alt={text.contributorsAlt}
-              loading="lazy"
-              decoding="async"
-              className="max-w-full"
-            />
-          </a>
-        </div>
-      </section>
-
-      <section className="mx-auto mt-16 w-full max-w-5xl text-center">
-        <h2 className="text-2xl font-semibold text-zinc-950 dark:text-zinc-50 md:text-3xl">
-          Star History
-        </h2>
-        <div className="mt-7 flex justify-center">
-          <a
-            href={starHistoryUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="block w-full max-w-4xl"
-          >
-            <picture>
-              <source
-                media="(prefers-color-scheme: dark)"
-                srcSet={darkStarHistoryChart}
-              />
-              <source
-                media="(prefers-color-scheme: light)"
-                srcSet={starHistoryChart}
-              />
-              <img
-                src={starHistoryChart}
-                alt="Star History Chart"
-                loading="lazy"
-                decoding="async"
-                className="mx-auto w-full"
-              />
-            </picture>
-          </a>
-        </div>
-      </section>
     </main>
   );
 }
@@ -212,7 +121,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]'>): Promis
   const text = messages[locale];
 
   return {
-    title: `${appNames[locale]} ${text.center}`,
+    title: `${appNames[locale]} · ${text.center}`,
     description: text.description,
     alternates: {
       languages: {

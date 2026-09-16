@@ -1,4 +1,4 @@
-import { App, Button, Drawer, Input, Space, Switch } from "antd";
+import { App, Button, Drawer, Input, Space, Switch } from "@/components/ui/heroui-compat";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 

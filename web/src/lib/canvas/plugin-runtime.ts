@@ -36,7 +36,7 @@ export function getPluginRuntime(): PluginRuntime {
             emit: emitCanvasEvent,
             on: onCanvasEvent,
         };
-        (window as unknown as { InfiniteCanvasRuntime?: PluginRuntime }).InfiniteCanvasRuntime = runtime;
+        (window as unknown as { VisoraRuntime?: PluginRuntime }).VisoraRuntime = runtime;
     }
     return runtime;
 }

@@ -1,5 +1,5 @@
 import { memo, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { App, Empty, Input, Popconfirm, Select, Spin, Tag } from "antd";
+import { App, Empty, Input, Popconfirm, Select, Spin, Tag } from "@/components/ui/heroui-compat";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Check, ChevronRight, Download, Eye, FileText, Image as ImageIcon, ListChecks, Music2, Plus, Search, Settings2, Square, Trash2, Type, Video } from "lucide-react";
 import { motion } from "motion/react";

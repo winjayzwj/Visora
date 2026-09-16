@@ -1,4 +1,4 @@
-import { Alert, Button, Progress, Spin } from "antd";
+import { Alert, Button, Progress, Spin } from "@/components/ui/heroui-compat";
 import type { TFunction } from "i18next";
 import { Database, HardDrive, Layers3, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";

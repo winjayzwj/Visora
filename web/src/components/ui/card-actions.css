@@ -1,0 +1,53 @@
+.library-card-action {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.library-card-action--danger {
+    color: var(--danger);
+}
+
+.library-card-action:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    transition: none;
+}
+
+.library-card-action:active:not(:focus-visible) {
+    transform: scale(0.96);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .library-card-action:hover:not(:focus-visible) {
+        transform: translateY(-1px);
+        background: var(--accent-soft);
+        color: var(--accent-soft-foreground);
+    }
+
+    .library-card-action--danger:hover:not(:focus-visible) {
+        background: var(--danger-soft);
+        color: var(--danger-soft-foreground);
+    }
+
+    .library-card-action:active:not(:focus-visible) {
+        transform: scale(0.96);
+    }
+}
+
+@media (pointer: coarse) {
+    .library-card-action { width: 44px; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .library-card-action { transition: none; }
+    .library-card-action:hover:not(:focus-visible),
+    .library-card-action:active:not(:focus-visible) { transform: none; }
+}

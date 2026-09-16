@@ -20,7 +20,7 @@ import { useThemeStore } from "@/stores/use-theme-store";
 import { cropDataUrl, splitDataUrl, upscaleDataUrl } from "@/lib/canvas/canvas-image-data";
 import { fitNodeSize, nodeSizeFromRatio } from "@/lib/canvas/canvas-node-size";
 import { captureVideoFrame, type VideoFramePosition } from "@/lib/canvas/canvas-video-frame";
-import { App, Button, Modal } from "antd";
+import { App, Button, Modal } from "@/components/ui/heroui-compat";
 import { NODE_DEFAULT_SIZE, getNodeSpec } from "@/constant/canvas";
 import { ActiveConnectionPath, ConnectionPath } from "@/components/canvas/canvas-connections";
 import { CanvasConfigComposer } from "@/components/canvas/canvas-config-composer";
@@ -34,7 +34,7 @@ import { CanvasNodeUpscaleDialog, type CanvasImageUpscaleParams } from "@/compon
 import { buildNodeGenerationContext, buildNodeGenerationInputs, buildNodeResponseMessages, hydrateNodeGenerationContext, type NodeGenerationInput } from "@/components/canvas/canvas-node-generation";
 import { CanvasNodeHoverToolbar, CanvasNodeInfoModal } from "@/components/canvas/canvas-node-hover-toolbar";
 import { CanvasSelectionToolbar } from "@/components/canvas/canvas-selection-toolbar";
-import { InfiniteCanvas } from "@/components/canvas/infinite-canvas";
+import { VisoraCanvas } from "@/components/canvas/visora-canvas";
 import { Minimap } from "@/components/canvas/canvas-mini-map";
 import { CanvasNode } from "@/components/canvas/canvas-node";
 import { CanvasNodePromptPanel, type CanvasNodeGenerationMode } from "@/components/canvas/canvas-node-prompt-panel";
@@ -152,10 +152,10 @@ export default function CanvasPage() {
 
     if (!mounted) return <CanvasRefreshShell />;
 
-    return <InfiniteCanvasPage />;
+    return <VisoraCanvasPage />;
 }
 
-function InfiniteCanvasPage() {
+function VisoraCanvasPage() {
     const { message, modal } = App.useApp();
     const { t } = useTranslation();
     // Subscribe to the registry version so plugin registration changes rerender the canvas.
@@ -3105,7 +3105,7 @@ function InfiniteCanvasPage() {
                     onToggleAgent={toggleAgentPanel}
                 />
 
-                <InfiniteCanvas
+                <VisoraCanvas
                     containerRef={containerRef}
                     viewport={viewport}
                     tool={canvasTool}
@@ -3226,7 +3226,7 @@ function InfiniteCanvasPage() {
                             onClose={() => setNodeCreatePosition(null)}
                         />
                     ) : null}
-                </InfiniteCanvas>
+                </VisoraCanvas>
 
                 <CanvasNodeHoverToolbar
                     node={isNodeDragging || isNodeResizing || nodeImageSettingsOpen || expandedBatchNodeIds.has(toolbarNode?.id || "") ? null : toolbarNode}

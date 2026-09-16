@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Button, Card, Checkbox, Form, Modal, Space, Switch, Tag, Tooltip, Typography, theme as antdTheme } from "antd";
+import { Button, Card, Checkbox, Form, Modal, Space, Switch, Tag, Tooltip, Typography, theme as antdTheme } from "@/components/ui/heroui-compat";
 import { Ellipsis, Image as ImageIcon, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

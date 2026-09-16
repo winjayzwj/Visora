@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
-import { App } from "antd";
+import { App } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
 
 import { useConfigStore } from "@/stores/use-config-store";

@@ -1,6 +1,6 @@
-# @infinite-canvas/plugin-sdk
+# @visora-ai/plugin-sdk
 
-Infinite Canvas 画布节点插件的 **TypeScript SDK**。插件作者只写节点 UI 与逻辑,类型、JSX、运行时桥接、构建全部由 SDK 提供;产物仍是宿主加载器现有契约的 ESM(React external,宿主单例)。
+Visora AI 画布节点插件的 **TypeScript SDK**。插件作者只写节点 UI 与逻辑,类型、JSX、运行时桥接、构建全部由 SDK 提供;产物仍是宿主加载器现有契约的 ESM(React external,宿主单例)。
 
 ## 提供什么
 
@@ -16,8 +16,8 @@ Infinite Canvas 画布节点插件的 **TypeScript SDK**。插件作者只写节
 
 ```tsx
 // src/index.tsx
-import { definePlugin, useState } from "@infinite-canvas/plugin-sdk";
-import type { CanvasNodeContentProps } from "@infinite-canvas/plugin-sdk";
+import { definePlugin, useState } from "@visora-ai/plugin-sdk";
+import type { CanvasNodeContentProps } from "@visora-ai/plugin-sdk";
 
 function Content({ ctx }: CanvasNodeContentProps) {
     const [n, setN] = useState(0);
@@ -46,7 +46,7 @@ export default definePlugin({
 
 ```js
 // build.mjs
-import { buildPlugin } from "@infinite-canvas/plugin-sdk/build";
+import { buildPlugin } from "@visora-ai/plugin-sdk/build";
 await buildPlugin(import.meta.url);
 ```
 
@@ -61,17 +61,17 @@ await buildPlugin(import.meta.url);
     "type": "module",
     "scripts": { "build": "node build.mjs", "dev": "node build.mjs --watch", "typecheck": "tsc --noEmit" },
     "devDependencies": {
-        "@infinite-canvas/plugin-sdk": "file:../sdk",
+        "@visora-ai/plugin-sdk": "file:../sdk",
         "@types/react": "19.1.12",
         "typescript": "^5"
     }
 }
 ```
 
-插件 `tsconfig.json` 关键项:`"jsx": "react-jsx"`、`"jsxImportSource": "@infinite-canvas/plugin-sdk"`、`"moduleResolution": "bundler"`。
+插件 `tsconfig.json` 关键项:`"jsx": "react-jsx"`、`"jsxImportSource": "@visora-ai/plugin-sdk"`、`"moduleResolution": "bundler"`。
 
 ## 设计约束
 
-- **React 单例**:JSX 与 hooks 惰性读取 `globalThis.InfiniteCanvasRuntime.React`(宿主在加载插件前注入),react 全程 external,绝不打包第二份。
+- **React 单例**:JSX 与 hooks 惰性读取 `globalThis.VisoraRuntime.React`(宿主在加载插件前注入),react 全程 external,绝不打包第二份。
 - **重依赖**:three、marked 等在源码里 `await import("https://esm.sh/...")` 动态加载,esbuild 自动 external,不进 bundle。
 - **类型真源**:`src/types.ts` 是宿主 `web/src/types/canvas-plugin.ts` 公开契约的镜像;宿主契约变更时同步此处。

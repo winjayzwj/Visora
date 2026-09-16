@@ -1,11 +1,12 @@
-import { App, Button, Form, Input, Switch } from "antd";
+import { App, Button, Form, Input, Switch } from "@/components/ui/heroui-compat";
 import { Copy, Network, Wifi } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { LOCAL_PROXY_COMMAND } from "@/constant/env";
 import { useCopyText } from "@/hooks/use-copy-text";
 import { testLocalProxy } from "@/services/api/local-proxy";
-import { DEFAULT_LOCAL_PROXY_URL, LOCAL_PROXY_PACKAGE, normalizeLocalProxyUrl, useConfigStore } from "@/stores/use-config-store";
+import { DEFAULT_LOCAL_PROXY_URL, normalizeLocalProxyUrl, useConfigStore } from "@/stores/use-config-store";
 
 export function ConfigLocalProxy() {
     const { message } = App.useApp();
@@ -44,10 +45,14 @@ export function ConfigLocalProxy() {
                     <>
                         <div className="mt-3 rounded-md bg-stone-100 px-3 py-2 dark:bg-stone-900">
                             <div className="mb-1 text-xs text-stone-500">{t("config.proxy.startHint")}</div>
-                            <div className="flex items-center justify-between gap-3">
-                                <code className="min-w-0 truncate text-xs">{command}</code>
-                                <Button size="small" type="text" icon={<Copy className="size-3.5" />} onClick={() => copyText(command)} />
-                            </div>
+                            {command ? (
+                                <div className="flex items-center justify-between gap-3">
+                                    <code className="min-w-0 truncate text-xs">{command}</code>
+                                    <Button size="small" type="text" icon={<Copy className="size-3.5" />} onClick={() => copyText(command)} />
+                                </div>
+                            ) : (
+                                <div className="text-xs text-stone-500">{t("config.proxy.commandUnavailable")}</div>
+                            )}
                         </div>
                         <Form.Item label={t("config.proxy.address")} extra={t("config.proxy.addressDescription")} className="mt-3 mb-0">
                             <Input
@@ -69,8 +74,8 @@ export function ConfigLocalProxy() {
 }
 
 function localProxyCommand(proxyUrl: string) {
-    // Pinned to @latest because npx otherwise reuses whatever version it already cached.
-    const command = `npx ${LOCAL_PROXY_PACKAGE}@latest`;
+    if (!LOCAL_PROXY_COMMAND) return "";
+    const command = LOCAL_PROXY_COMMAND;
     try {
         const port = new URL(normalizeLocalProxyUrl(proxyUrl) || DEFAULT_LOCAL_PROXY_URL).port;
         return port && port !== new URL(DEFAULT_LOCAL_PROXY_URL).port ? `${command} --port ${port}` : command;

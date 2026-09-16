@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowUp, LoaderCircle, Maximize2, Square } from "lucide-react";
-import { Button, Modal, Tooltip } from "antd";
+import { Button, Modal, Tooltip } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
 
 import { ModelPicker } from "@/components/model-picker";

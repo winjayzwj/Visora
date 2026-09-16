@@ -1,0 +1,32 @@
+.visora-overlay-header {
+    min-height: 36px;
+    flex-direction: row;
+    align-items: center;
+    padding-inline-end: 44px;
+}
+
+.visora-overlay-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
+    color: var(--foreground);
+}
+
+.visora-overlay-close:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+}
+
+/* 轻量操作统一使用主题前景色：浅色为接近黑色，深色仍保持可读。 */
+.visora-default-button,
+.button--secondary,
+.button--tertiary,
+.button--ghost,
+.button--outline {
+    --button-fg: var(--foreground);
+}

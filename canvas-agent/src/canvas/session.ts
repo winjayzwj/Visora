@@ -77,7 +77,7 @@ export class CanvasSession {
         return this.boundClientId || this.activeClientId;
     }
 
-    /** 返回 Canvas Agent 当前连接状态。 */
+    /** 返回 Visora AI Agent 当前连接状态。 */
     health() {
         return { ok: true, protocolVersion: AGENT_PROTOCOL_VERSION, hasCanvas: Boolean(this.canvasState), clients: this.clients.size, codexBusy: this.codexState.busy, conversation: this.conversationStateSnapshot };
     }
@@ -146,13 +146,13 @@ export class CanvasSession {
         this.preparedConversationThreadId = threadId;
         const statuses = this.conversationState.mcpStatuses;
         const hasPending = !this.conversationInventoryComplete || Object.values(statuses).some((item) => item.status === "starting");
-        const requiredFailure = statuses["infinite-canvas"]?.status !== "ready";
+        const requiredFailure = statuses.visora?.status !== "ready";
         const hasFailure = Object.values(statuses).some((item) => item.status === "failed" || item.status === "cancelled");
-        const requiredFailureDetail = statuses["infinite-canvas"]?.error;
+        const requiredFailureDetail = statuses.visora?.error;
         return this.updateConversation({
             threadId,
             status: hasPending ? "preparing" : requiredFailure ? "failed" : hasFailure ? "warning" : "ready",
-            error: requiredFailure ? `Infinite Canvas MCP 初始化失败${requiredFailureDetail ? `：${requiredFailureDetail}` : ""}` : undefined,
+            error: requiredFailure ? `Visora AI MCP 初始化失败${requiredFailureDetail ? `：${requiredFailureDetail}` : ""}` : undefined,
         });
     }
 
@@ -265,7 +265,7 @@ export class CanvasSession {
         });
     }
 
-    /** 建立网页与 Canvas Agent 之间的 SSE 连接。 */
+    /** 建立网页与 Visora AI Agent 之间的 SSE 连接。 */
     openEvents(url: URL, res: ServerResponse, activeThreadId = "") {
         const clientId = url.searchParams.get("clientId") || crypto.randomUUID();
         const statusOnly = url.searchParams.get("role") === "status";

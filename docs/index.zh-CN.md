@@ -1,4 +1,4 @@
-# 无限画布文档索引
+# 映序文档索引
 
 ## 项目介绍
 
@@ -33,6 +33,14 @@
 - [更新日志](/zh-CN/docs/progress/changelog)
 - [待测试](/zh-CN/docs/progress/pending-test)
 - [TODO](/zh-CN/docs/progress/todo)
+
+## 本地开发规划
+
+- [大方向路线图](plans/visora-roadmap.md)
+- [需求对照与取舍](plans/visora-requirements-map.md)
+- [小版本迭代计划](plans/visora-iteration-plan.md)
+
+以上为本地 Markdown 规划入口，不是已发布的文档站路由。P1 账号/后台已有本地验收记录，后续迭代仍为规划。
 
 ## 说明
 

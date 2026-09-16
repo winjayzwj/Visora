@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>Visora 提示词库迁移</title></head>
+<body><p id="status">正在迁移旧提示词库…</p>
+<script>
+const status = document.querySelector("#status");
+const legacyOrigin = "http://localhost:8888";
+const channel = "visora-prompt-migration";
+const storeKey = "visora:prompt_source_store_v2";
+
+function openCache(mode) {
+  return new Promise((resolve, reject) => {
+    const connect = (version) => {
+      const request = version ? indexedDB.open("visora", version) : indexedDB.open("visora");
+      request.onerror = () => reject(request.error);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains("prompt_cache")) request.result.createObjectStore("prompt_cache");
+      };
+      request.onsuccess = () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains("prompt_cache")) {
+          const nextVersion = database.version + 1;
+          database.close();
+          return connect(nextVersion);
+        }
+        const transaction = database.transaction("prompt_cache", mode);
+        transaction.oncomplete = () => database.close();
+        transaction.onerror = () => reject(transaction.error);
+        resolve(transaction.objectStore("prompt_cache"));
+      };
+    };
+    connect();
+  });
+}
+
+async function importPayload(payload) {
+  if (!payload || !Array.isArray(payload.sources) || !Array.isArray(payload.cacheEntries)) throw new Error("invalid payload");
+  const cache = await openCache("readwrite");
+  await new Promise((resolve, reject) => {
+    const clear = cache.clear();
+    clear.onerror = () => reject(clear.error);
+    clear.onsuccess = () => resolve();
+  });
+  for (const entry of payload.cacheEntries) {
+    if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string") continue;
+    await new Promise((resolve, reject) => {
+      const put = cache.put(entry[1], entry[0]);
+      put.onerror = () => reject(put.error);
+      put.onsuccess = () => resolve();
+    });
+  }
+  const schedule = payload.schedule && typeof payload.schedule === "object" ? payload.schedule : { intervalMinutes: 30, lastFetchedAt: "" };
+  localStorage.setItem(storeKey, JSON.stringify({ state: { sources: payload.sources, schedule }, version: 0 }));
+}
+
+const frame = document.createElement("iframe");
+frame.hidden = true;
+frame.src = `${legacyOrigin}/legacy-prompt-migration-bridge.html`;
+window.addEventListener("message", async (event) => {
+  if (event.origin !== legacyOrigin || !event.data || event.data.channel !== channel) return;
+  if (event.data.type === "ready") return event.source.postMessage({ channel, type: "export" }, legacyOrigin);
+  if (event.data.type === "payload") {
+    try {
+      await importPayload(event.data.payload);
+      event.source.postMessage({ channel, type: "commit" }, legacyOrigin);
+    } catch {
+      status.textContent = "迁移失败：旧数据未删除。";
+    }
+  }
+  if (event.data.type === "cleared") status.textContent = `迁移完成：${event.data.counts.sources} 个提示词来源，${event.data.counts.cache} 条缓存。现在可以打开 Visora。`;
+  if (event.data.type === "failed") status.textContent = "迁移失败：旧数据未删除。";
+});
+document.body.append(frame);
+</script>
+</body></html>

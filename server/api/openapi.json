@@ -1,0 +1,317 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Visora AI P1", "version": "0.2.0", "description": "本地开发账号服务与运营后台。写请求必须通过浏览器 Origin 精确白名单验证，缺失或不匹配返回403 FORBIDDEN。写方法包含 POST/PATCH/PUT/DELETE，四者都要求 Origin、X-Visora-Request 与 Content-Type 三道校验。浏览器只调用本 origin 的 /api；开发用户端/Admin统一使用127.0.0.1，不混用localhost。代理保留 Origin、Cookie 和 Set-Cookie，不让浏览器直接请求API_TARGET。项目云存储、平台生成任务与积分消耗结算仍未接入；积分流水中的 consume 类型由后续生成迭代写入，当前没有写入方。" },
+  "security": [{ "session": [] }],
+  "paths": {
+    "/healthz": {
+      "get": { "operationId": "health", "security": [], "responses": { "200": { "description": "进程存活" } } }
+    },
+    "/readyz": {
+      "get": { "operationId": "ready", "security": [], "responses": { "200": { "description": "MongoDB 就绪" }, "503": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login", "security": [], "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/Credentials" },
+        "responses": { "200": { "$ref": "#/components/responses/Login" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/auth/me": {
+      "get": { "operationId": "currentUser", "description": "返回当前账号，含本人积分余额。", "responses": { "200": { "$ref": "#/components/responses/User" }, "401": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout", "security": [], "description": "Cookie可选；不存在/过期/禁用/已删除会话均可重复退出。成功总是清理同名同Path Cookie；仍需验证Origin与请求头。", "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "additionalProperties": false } } } },
+        "responses": { "204": { "description": "会话已退出", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" }, "Set-Cookie": { "description": "visora_session 清理：Path=/; HttpOnly; SameSite=Strict; Max-Age=0，Secure与登录模式一致。", "schema": { "type": "string" } } } }, "400": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/membership/applications": {
+      "post": {
+        "operationId": "submitMembershipApplication", "description": "已登录用户提交会员申请，进入 pending 供管理员审批。提交不做去重：同一用户可有多条待审申请，审批时逐条处理。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/ApplicationSubmit" },
+        "responses": { "201": { "$ref": "#/components/responses/Application" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "operationId": "listUsers", "description": "仅管理员；默认及精确邮箱筛选均包含active/disabled。createdAt和_id倒序，cursor与筛选条件绑定；前端维护cursor栈提供上一页，更换查询或刷新重置cursor栈。不返回密码、sessionVersion或会话。",
+        "parameters": [
+          { "$ref": "#/components/parameters/Cursor" },
+          { "name": "email", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/UserPage" },
+          "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "operationId": "createUser", "description": "仅管理员，创建普通 active 用户；拒绝客户端 role/status 字段。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/Credentials" },
+        "responses": { "201": { "$ref": "#/components/responses/User" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "patch": {
+        "operationId": "setUserStatus", "description": "仅管理员可停用/恢复普通用户；管理员账号受保护。恢复不能使旧会话复活。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/StatusChange" },
+        "responses": { "200": { "$ref": "#/components/responses/User" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/points/ledger": {
+      "get": {
+        "operationId": "listPointEntries", "description": "仅管理员；积分流水，createdAt/_id 倒序。kind 为 grant/revoke/topup/allocate/allocation_revoke/consume。团队池流水没有 userId，只有 teamId/teamName；成员分配流水同时有 userId 与 teamId。",
+        "parameters": [
+          { "$ref": "#/components/parameters/Cursor" },
+          { "name": "userId", "in": "query", "schema": { "type": "string" } },
+          { "name": "kind", "in": "query", "schema": { "type": "string", "enum": ["grant", "revoke", "topup", "allocate", "allocation_revoke", "consume"] } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/PointEntryPage" },
+          "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/admin/points/grant": {
+      "post": {
+        "operationId": "grantPoints", "description": "仅管理员；给用户发放积分。余额与流水在同一事务内写入。单次上限 100000000，超过返回 400。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/PointMove" },
+        "responses": { "200": { "$ref": "#/components/responses/PointEntry" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/points/revoke": {
+      "post": {
+        "operationId": "revokePoints", "description": "仅管理员；撤销用户积分。余额不足时返回 409 INSUFFICIENT_POINTS，且不会把余额截断到 0，也不会写入流水。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/PointMove" },
+        "responses": { "200": { "$ref": "#/components/responses/PointEntry" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/models": {
+      "get": {
+        "operationId": "listModels", "description": "仅管理员；平台模型目录，createdAt/_id 倒序。目录只放报价与启停，不含供应商密钥。",
+        "parameters": [{ "$ref": "#/components/parameters/Cursor" }],
+        "responses": { "200": { "$ref": "#/components/responses/ModelPage" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "operationId": "createModel", "description": "仅管理员；名称唯一，重复返回 409 NAME_EXISTS。kind 仅接受 image/video/text/audio。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/ModelCreate" },
+        "responses": { "201": { "$ref": "#/components/responses/Model" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/models/{id}": {
+      "patch": {
+        "operationId": "updateModel", "description": "仅管理员；局部更新，至少要带一个字段，否则 400。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/ModelUpdate" },
+        "responses": { "200": { "$ref": "#/components/responses/Model" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/teams": {
+      "get": {
+        "operationId": "listTeams", "description": "仅管理员；团队列表，createdAt/_id 倒序。allocatedThisMonth 由积分流水聚合得到（UTC 自然月）。",
+        "parameters": [{ "$ref": "#/components/parameters/Cursor" }],
+        "responses": { "200": { "$ref": "#/components/responses/TeamPage" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "operationId": "createTeam", "description": "仅管理员；创建团队并把指定用户设为团队管理员成员。团队名唯一，重复返回 409 NAME_EXISTS。新团队积分池为 0。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/TeamCreate" },
+        "responses": { "201": { "$ref": "#/components/responses/Team" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/teams/{id}/dissolve": {
+      "post": {
+        "operationId": "dissolveTeam", "description": "仅管理员；解散团队。按需求对照 C07 只把状态改为 dissolved 并冻结后续积分操作，积分池余额与成员关系保留，不清空积分、不删除素材。破坏性清算待 D09 确认后再实现。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "additionalProperties": false } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Team" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/teams/{id}/members": {
+      "get": {
+        "operationId": "listTeamMembers", "description": "仅管理员；团队成员与各自已分配积分。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }],
+        "responses": { "200": { "$ref": "#/components/responses/TeamMemberPage" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "operationId": "addTeamMember", "description": "仅管理员；加入成员，重复加入返回 409 MEMBER_EXISTS。团队已解散返回 409 TEAM_INACTIVE。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["userId"], "additionalProperties": false, "properties": { "userId": { "type": "string" } } } } } },
+        "responses": { "201": { "$ref": "#/components/responses/TeamMember" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/teams/{id}/members/{userId}": {
+      "delete": {
+        "operationId": "removeTeamMember", "description": "仅管理员；移出成员。团队管理员不能移出；成员仍有已分配积分时返回 409 MEMBER_HAS_POINTS，要求先撤销，避免积分悬空。DELETE 同样需要 Origin 与请求头校验。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "responses": { "200": { "$ref": "#/components/responses/TeamMember" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/teams/{id}/points/topup": {
+      "post": {
+        "operationId": "topUpTeam", "description": "仅管理员；平台向团队积分池充入积分，写入 scope=team_pool 的流水。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/TeamTopUp" },
+        "responses": { "200": { "$ref": "#/components/responses/Team" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/teams/{id}/points/allocate": {
+      "post": {
+        "operationId": "allocateTeamPoints", "description": "仅管理员；从团队池分配到成员，同时减少池余额并增加成员已分配积分。池余额不足返回 409 INSUFFICIENT_POINTS。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/TeamAllocation" },
+        "responses": { "200": { "$ref": "#/components/responses/TeamMember" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/teams/{id}/points/revoke": {
+      "post": {
+        "operationId": "revokeTeamAllocation", "description": "仅管理员；撤销成员已分配积分并退回团队池。成员已分配不足返回 409 INSUFFICIENT_POINTS。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/TeamAllocation" },
+        "responses": { "200": { "$ref": "#/components/responses/TeamMember" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/membership/plans": {
+      "get": {
+        "operationId": "listPlans", "description": "仅管理员；套餐配置列表，按 code 升序。列表为空表示尚未配置任何套餐。",
+        "responses": { "200": { "$ref": "#/components/responses/PlanPage" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      },
+      "put": {
+        "operationId": "upsertPlan", "description": "仅管理员；按 code 整表覆盖写入套餐。不预置任何套餐，也不预设时长与赠送额度。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/PlanUpsert" },
+        "responses": { "200": { "$ref": "#/components/responses/Plan" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/membership/applications": {
+      "get": {
+        "operationId": "listApplications", "description": "仅管理员；会员申请列表，createdAt/_id 倒序，可按 status 过滤。",
+        "parameters": [
+          { "$ref": "#/components/parameters/Cursor" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "approved", "rejected"] } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/ApplicationPage" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/membership/applications/{id}/approve": {
+      "post": {
+        "operationId": "approveApplication", "description": "仅管理员；通过申请。用 status=pending 的条件更新做幂等闸门：重复提交返回 409 ALREADY_DECIDED，赠送积分只发一次。开通会员、赠送积分与更新申请在同一事务内完成。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/ApplicationDecision" },
+        "responses": { "200": { "$ref": "#/components/responses/Application" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/membership/applications/{id}/reject": {
+      "post": {
+        "operationId": "rejectApplication", "description": "仅管理员；拒绝申请，不发放积分。同样受 pending 条件更新保护，重复提交返回 409 ALREADY_DECIDED。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/ApplicationDecision" },
+        "responses": { "200": { "$ref": "#/components/responses/Application" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/membership/members": {
+      "get": {
+        "operationId": "listMemberships", "description": "仅管理员；会员列表，createdAt/_id 倒序。status 在读取时按 expiresAt 计算，过期显示为 expired。",
+        "parameters": [{ "$ref": "#/components/parameters/Cursor" }],
+        "responses": { "200": { "$ref": "#/components/responses/MembershipPage" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/accounts": {
+      "get": {
+        "operationId": "listAdmins", "description": "仅管理员；后台账号（role=admin）列表，createdAt/_id 倒序。",
+        "parameters": [{ "$ref": "#/components/parameters/Cursor" }],
+        "responses": { "200": { "$ref": "#/components/responses/UserPage" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "operationId": "createAdminAccount", "description": "仅管理员；创建后台账号。邮箱重复返回 409 EMAIL_EXISTS。",
+        "parameters": [{ "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/Credentials" },
+        "responses": { "201": { "$ref": "#/components/responses/User" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/accounts/{id}": {
+      "patch": {
+        "operationId": "setAdminStatus", "description": "仅管理员；停用/启用后台账号。不能停用自己（409 SELF_ACTION），不能停用最后一个启用中的管理员（409 LAST_ADMIN）。停用会递增 sessionVersion 使已签发会话立即失效。",
+        "parameters": [{ "$ref": "#/components/parameters/PathID" }, { "$ref": "#/components/parameters/RequestHeader" }],
+        "requestBody": { "$ref": "#/components/requestBodies/StatusChange" },
+        "responses": { "200": { "$ref": "#/components/responses/User" }, "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "413": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/permissions": {
+      "get": {
+        "operationId": "listPermissions", "description": "仅管理员；只读的服务端授权矩阵。按需求对照 D08，这里返回各接口实际要求的身份，不做可编辑的菜单可见性，也不用隐藏菜单冒充授权。",
+        "responses": { "200": { "$ref": "#/components/responses/PermissionPage" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/api/admin/stats/overview": {
+      "get": {
+        "operationId": "overview", "description": "仅管理员；运营看板聚合。只返回有真实数据来源的指标：用户/管理员计数、模型与团队计数、待审申请、有效会员、积分发放与撤销合计、用户积分结存、团队池合计、近 7 日注册序列（UTC 自然日）。没有生成任务与积分消耗的数据源，因此不返回生成次数与消耗指标。",
+        "responses": { "200": { "$ref": "#/components/responses/Overview" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    }
+  },
+  "components": {
+    "headers": { "NoStore": { "schema": { "type": "string", "const": "no-store" } } },
+    "securitySchemes": { "session": { "type": "apiKey", "in": "cookie", "name": "visora_session" } },
+    "parameters": {
+      "RequestHeader": { "name": "X-Visora-Request", "in": "header", "required": true, "schema": { "type": "string", "const": "1" } },
+      "Cursor": { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+      "PathID": { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+    },
+    "requestBodies": {
+      "Credentials": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["email", "password"], "additionalProperties": false, "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string", "writeOnly": true } } } } } },
+      "StatusChange": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["status"], "additionalProperties": false, "properties": { "status": { "type": "string", "enum": ["active", "disabled"] } } } } } },
+      "PointMove": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["userId", "amount"], "additionalProperties": false, "properties": { "userId": { "type": "string" }, "amount": { "type": "integer", "minimum": 1, "maximum": 100000000 }, "note": { "type": "string", "maxLength": 200 } } } } } },
+      "ModelCreate": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name", "kind", "pointsCost"], "additionalProperties": false, "properties": { "name": { "type": "string", "maxLength": 60 }, "kind": { "type": "string", "enum": ["image", "video", "text", "audio"] }, "pointsCost": { "type": "integer", "minimum": 0 } } } } } },
+      "ModelUpdate": { "required": true, "content": { "application/json": { "schema": { "type": "object", "minProperties": 1, "additionalProperties": false, "properties": { "name": { "type": "string", "maxLength": 60 }, "kind": { "type": "string", "enum": ["image", "video", "text", "audio"] }, "pointsCost": { "type": "integer", "minimum": 0 }, "status": { "type": "string", "enum": ["active", "disabled"] } } } } } },
+      "TeamCreate": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name", "adminUserId"], "additionalProperties": false, "properties": { "name": { "type": "string", "maxLength": 60 }, "adminUserId": { "type": "string" } } } } } },
+      "TeamTopUp": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["amount"], "additionalProperties": false, "properties": { "amount": { "type": "integer", "minimum": 1, "maximum": 100000000 }, "note": { "type": "string", "maxLength": 200 } } } } } },
+      "TeamAllocation": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["userId", "amount"], "additionalProperties": false, "properties": { "userId": { "type": "string" }, "amount": { "type": "integer", "minimum": 1, "maximum": 100000000 }, "note": { "type": "string", "maxLength": 200 } } } } } },
+      "PlanUpsert": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["code", "name"], "additionalProperties": false, "properties": { "code": { "type": "string", "maxLength": 32 }, "name": { "type": "string", "maxLength": 40 }, "description": { "type": "string", "maxLength": 200 }, "durationDays": { "type": "integer", "minimum": 0, "maximum": 3650 }, "bonusPoints": { "type": "integer", "minimum": 0, "maximum": 100000000 }, "features": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 60 } }, "status": { "type": "string", "enum": ["active", "disabled"] } } } } } },
+      "ApplicationSubmit": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["scene", "reason"], "additionalProperties": false, "properties": { "scene": { "type": "string", "maxLength": 60 }, "reason": { "type": "string", "maxLength": 500 } } } } } },
+      "ApplicationDecision": { "required": true, "content": { "application/json": { "schema": { "type": "object", "additionalProperties": false, "properties": { "planCode": { "type": "string", "description": "approve 时必填，且必须是已存在的套餐；reject 时忽略。" } } } } } }
+    },
+    "schemas": {
+      "User": { "type": "object", "required": ["id", "email", "role", "status", "points", "createdAt"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "email": { "type": "string", "format": "email" }, "role": { "type": "string", "enum": ["user", "admin"] }, "status": { "type": "string", "enum": ["active", "disabled"] }, "points": { "type": "integer", "description": "本人积分余额。团队池与团队已分配积分是另外两个独立余额，不并入这里。" }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "UserResponse": { "type": "object", "required": ["user"], "properties": { "user": { "$ref": "#/components/schemas/User" } } },
+      "PointEntry": { "type": "object", "required": ["id", "scope", "kind", "delta", "balanceAfter", "actorId", "createdAt"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "userEmail": { "type": "string" }, "teamId": { "type": "string" }, "teamName": { "type": "string" }, "scope": { "type": "string", "enum": ["user", "team_pool", "team_member"] }, "kind": { "type": "string", "enum": ["grant", "revoke", "topup", "allocate", "allocation_revoke", "consume"] }, "delta": { "type": "integer", "description": "有符号变动量，负数为减少。" }, "balanceAfter": { "type": "integer", "description": "该 scope 对应余额变动后的值。" }, "modelName": { "type": "string" }, "note": { "type": "string" }, "actorId": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "AIModel": { "type": "object", "required": ["id", "name", "kind", "pointsCost", "status", "calls", "createdAt", "updatedAt"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "kind": { "type": "string", "enum": ["image", "video", "text", "audio"] }, "pointsCost": { "type": "integer", "description": "每次调用的积分报价。" }, "status": { "type": "string", "enum": ["active", "disabled"] }, "calls": { "type": "integer", "description": "累计调用次数。平台生成尚未接入，当前恒为 0。" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+      "Team": { "type": "object", "required": ["id", "name", "adminUserId", "adminEmail", "memberCount", "pointsPool", "allocatedTotal", "allocatedThisMonth", "status", "createdAt"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "adminUserId": { "type": "string" }, "adminEmail": { "type": "string" }, "memberCount": { "type": "integer" }, "pointsPool": { "type": "integer", "description": "团队积分池余额。" }, "allocatedTotal": { "type": "integer", "description": "累计已分配到成员的积分。" }, "allocatedThisMonth": { "type": "integer", "description": "UTC 自然月内已分配积分。" }, "status": { "type": "string", "enum": ["active", "dissolved"] }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "TeamMember": { "type": "object", "required": ["userId", "email", "role", "allocatedPoints", "createdAt"], "additionalProperties": false, "properties": { "userId": { "type": "string" }, "email": { "type": "string" }, "role": { "type": "string", "enum": ["admin", "member"] }, "allocatedPoints": { "type": "integer" }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "MembershipPlan": { "type": "object", "required": ["code", "name", "description", "durationDays", "bonusPoints", "features", "status"], "additionalProperties": false, "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "description": { "type": "string" }, "durationDays": { "type": "integer" }, "bonusPoints": { "type": "integer" }, "features": { "type": "array", "items": { "type": "string" } }, "status": { "type": "string", "enum": ["active", "disabled"] } } },
+      "MembershipApplication": { "type": "object", "required": ["id", "userId", "userEmail", "scene", "reason", "status", "createdAt"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "userEmail": { "type": "string" }, "scene": { "type": "string" }, "reason": { "type": "string" }, "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }, "decidedBy": { "type": "string" }, "decidedAt": { "type": "string", "format": "date-time" }, "planCode": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "Membership": { "type": "object", "required": ["id", "userId", "userEmail", "planCode", "planName", "grantedPoints", "startedAt", "expiresAt", "status", "createdAt"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "userEmail": { "type": "string" }, "planCode": { "type": "string" }, "planName": { "type": "string" }, "grantedPoints": { "type": "integer" }, "startedAt": { "type": "string", "format": "date-time" }, "expiresAt": { "type": "string", "format": "date-time" }, "status": { "type": "string", "enum": ["active", "expired", "disabled"] }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "PermissionRule": { "type": "object", "required": ["group", "action", "endpoint", "userAllowed", "note"], "additionalProperties": false, "properties": { "group": { "type": "string" }, "action": { "type": "string" }, "endpoint": { "type": "string" }, "userAllowed": { "type": "boolean", "description": "普通已登录用户是否可访问；false 表示仅管理员。" }, "note": { "type": "string" } } },
+      "DailyCount": { "type": "object", "required": ["date", "count"], "additionalProperties": false, "properties": { "date": { "type": "string", "description": "YYYY-MM-DD，UTC。" }, "count": { "type": "integer" } } },
+      "OverviewStats": { "type": "object", "required": ["totalUsers", "activeUsers", "disabledUsers", "adminUsers", "newUsersThisMonth", "totalModels", "activeModels", "totalTeams", "activeTeams", "pendingApplications", "activeMemberships", "issuedPoints", "revokedPoints", "outstandingPoints", "teamPoolPoints", "signups"], "additionalProperties": false, "properties": { "totalUsers": { "type": "integer", "description": "role=user 的账号总数。" }, "activeUsers": { "type": "integer" }, "disabledUsers": { "type": "integer" }, "adminUsers": { "type": "integer" }, "newUsersThisMonth": { "type": "integer", "description": "UTC 自然月内新增普通用户。" }, "totalModels": { "type": "integer" }, "activeModels": { "type": "integer" }, "totalTeams": { "type": "integer" }, "activeTeams": { "type": "integer" }, "pendingApplications": { "type": "integer" }, "activeMemberships": { "type": "integer" }, "issuedPoints": { "type": "integer", "description": "scope=user 且 kind=grant 的累计发放。" }, "revokedPoints": { "type": "integer", "description": "累计撤销，展示为正数。" }, "outstandingPoints": { "type": "integer", "description": "普通用户积分结存合计。" }, "teamPoolPoints": { "type": "integer", "description": "所有团队积分池合计，含已解散团队。" }, "signups": { "type": "array", "description": "近 7 日注册序列，含零值日。", "items": { "$ref": "#/components/schemas/DailyCount" } } } },
+      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string", "description": "400 INVALID_INPUT；401 INVALID_CREDENTIALS（登录）/UNAUTHENTICATED（会话）；403 FORBIDDEN（角色/Origin/header/Content-Type）；404 NOT_FOUND/MEMBER_NOT_FOUND/PLAN_NOT_FOUND；405 METHOD_NOT_ALLOWED；409 EMAIL_EXISTS/NAME_EXISTS/USER_PROTECTED/TEAM_INACTIVE/MEMBER_EXISTS/MEMBER_HAS_POINTS/INSUFFICIENT_POINTS/ALREADY_DECIDED/SELF_ACTION/LAST_ADMIN；413 PAYLOAD_TOO_LARGE；503 SERVICE_UNAVAILABLE。", "examples": ["INVALID_INPUT", "INVALID_CREDENTIALS", "UNAUTHENTICATED", "FORBIDDEN", "NOT_FOUND", "MEMBER_NOT_FOUND", "PLAN_NOT_FOUND", "METHOD_NOT_ALLOWED", "EMAIL_EXISTS", "NAME_EXISTS", "USER_PROTECTED", "TEAM_INACTIVE", "MEMBER_EXISTS", "MEMBER_HAS_POINTS", "INSUFFICIENT_POINTS", "ALREADY_DECIDED", "SELF_ACTION", "LAST_ADMIN", "PAYLOAD_TOO_LARGE", "SERVICE_UNAVAILABLE"] }, "message": { "type": "string" } } } } }
+    },
+    "responses": {
+      "User": { "description": "账号信息", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+      "Login": { "description": "身份确认成功，设置服务端会话Cookie", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" }, "Set-Cookie": { "description": "visora_session=<opaque>; Path=/; HttpOnly; SameSite=Strict; Max-Age由显式SESSION_TTL产生。HTTPS模式含Secure，loopback HTTP开发模式不含Secure。", "schema": { "type": "string" } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+      "PointEntry": { "description": "写入后的积分流水", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["entry"], "properties": { "entry": { "$ref": "#/components/schemas/PointEntry" } } } } } },
+      "Model": { "description": "模型", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["model"], "properties": { "model": { "$ref": "#/components/schemas/AIModel" } } } } } },
+      "Team": { "description": "团队", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["team"], "properties": { "team": { "$ref": "#/components/schemas/Team" } } } } } },
+      "TeamMember": { "description": "团队成员", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["member"], "properties": { "member": { "$ref": "#/components/schemas/TeamMember" } } } } } },
+      "Plan": { "description": "套餐", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["plan"], "properties": { "plan": { "$ref": "#/components/schemas/MembershipPlan" } } } } } },
+      "Application": { "description": "会员申请", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["application"], "properties": { "application": { "$ref": "#/components/schemas/MembershipApplication" } } } } } },
+      "UserPage": { "description": "账号分页", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/User" } }, "nextCursor": { "type": ["string", "null"] } } } } } },
+      "PointEntryPage": { "description": "积分流水分页", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/PointEntry" } }, "nextCursor": { "type": ["string", "null"] } } } } } },
+      "ModelPage": { "description": "模型分页", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AIModel" } }, "nextCursor": { "type": ["string", "null"] } } } } } },
+      "TeamPage": { "description": "团队分页", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Team" } }, "nextCursor": { "type": ["string", "null"] } } } } } },
+      "TeamMemberPage": { "description": "团队成员列表", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/TeamMember" } } } } } } },
+      "PlanPage": { "description": "套餐列表", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/MembershipPlan" } } } } } } },
+      "ApplicationPage": { "description": "会员申请分页", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/MembershipApplication" } }, "nextCursor": { "type": ["string", "null"] } } } } } },
+      "MembershipPage": { "description": "会员分页", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Membership" } }, "nextCursor": { "type": ["string", "null"] } } } } } },
+      "PermissionPage": { "description": "授权矩阵", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["items"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/PermissionRule" } } } } } } },
+      "Overview": { "description": "看板聚合", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "type": "object", "required": ["stats"], "properties": { "stats": { "$ref": "#/components/schemas/OverviewStats" } } } } } },
+      "Error": { "description": "受控错误；不回显数据库错误或凭据", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    }
+  }
+}

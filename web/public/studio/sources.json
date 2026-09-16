@@ -1,0 +1,8 @@
+{
+  "purpose": "Illustrative visual references for login and empty states; not user projects or AI generation results.",
+  "images": {
+    "architecture.jpg": "https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&w=1400&q=85",
+    "landscape.jpg": "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=640&q=80",
+    "valley.jpg": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=640&q=80"
+  }
+}

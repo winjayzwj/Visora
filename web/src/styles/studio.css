@@ -1,0 +1,708 @@
+/* Visora Studio 外壳结构样式。
+   Phase 0：配色统一由 HeroUI 默认主题提供，本文件不再硬编码任何颜色，
+   所有 --studio-* 都是 HeroUI 语义 token 的别名。
+   自定义特效（signal 流线、加载扫描、入场淡入、卡片抬升与辉光、导航下划线）已移除，
+   交互观感回归 HeroUI 原生。 */
+
+:root {
+    --studio-bg: var(--background);
+    --studio-panel: var(--surface);
+    --studio-raised: var(--surface-secondary);
+    --studio-border: var(--border);
+    --studio-text: var(--foreground);
+    --studio-muted: color-mix(in oklab, var(--muted) 92%, var(--foreground));
+    --studio-accent: var(--accent);
+    --studio-accent-soft: var(--accent-soft);
+    --studio-lime: var(--success);
+    --studio-surface-radius: var(--radius-lg);
+}
+
+/* Shared field-heading treatment for image and video workbenches. */
+.studio-field-label {
+    display: block;
+    color: var(--studio-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Shared image-reference entry cards for the image and video workbenches. */
+.studio-reference-action {
+    display: flex !important;
+    flex: 0 0 104px !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 104px !important;
+    height: 104px !important;
+    min-height: 104px !important;
+    padding: 0 !important;
+    color: var(--studio-muted) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    background: transparent !important;
+    border: 2px dashed var(--studio-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: none !important;
+}
+
+.studio-reference-action:hover {
+    color: var(--studio-text) !important;
+    background: var(--studio-accent-soft) !important;
+    border-color: var(--studio-accent) !important;
+}
+
+.studio-reference-action-icon {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    color: var(--studio-accent);
+    background: var(--studio-accent-soft);
+    border-radius: 999px;
+}
+
+.studio-reference-drop-hint {
+    flex-basis: 100%;
+    margin: 2px 0 0;
+    color: var(--studio-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* Canvas panels retain their own theme colors, while matching the workbench label rhythm. */
+.canvas-field-label {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.modal__container.heroui-compat-modal-container {
+    flex: 0 1 auto !important;
+    width: var(--modal-width) !important;
+    max-width: calc(100vw - 32px) !important;
+}
+
+.modal__container.heroui-compat-modal-container > .modal__dialog {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+.studio-shell,
+.studio-page,
+.studio-workbench {
+    color: var(--studio-text);
+    background: var(--studio-bg);
+    letter-spacing: 0;
+}
+
+.studio-container {
+    width: 100%;
+    max-width: 1600px;
+    margin-inline: auto;
+    padding: 24px 32px;
+}
+
+.studio-page-header {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.studio-page-breadcrumbs {
+    min-width: 0;
+    color: var(--studio-text);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.studio-page-header-context {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    min-width: min(100%, 260px);
+    margin-left: auto;
+}
+
+.studio-page-header-meta {
+    max-width: min(100%, 38rem);
+    color: var(--studio-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: right;
+}
+
+.studio-heading-icon {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    color: var(--studio-accent);
+    background: var(--studio-accent-soft);
+    border-radius: var(--studio-surface-radius);
+}
+
+.studio-panel {
+    background: var(--studio-panel);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-surface-radius);
+    box-shadow: none;
+}
+
+.studio-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid var(--studio-border);
+    padding-bottom: 16px;
+}
+
+.studio-section-title {
+    color: var(--studio-text);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0;
+}
+
+.studio-card {
+    background: var(--studio-panel);
+    border-color: var(--studio-border);
+    border-radius: var(--studio-surface-radius);
+}
+
+.studio-card:focus-within {
+    outline: 2px solid var(--studio-accent);
+    outline-offset: 3px;
+}
+
+.studio-empty {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 240px;
+    padding: 24px 16px;
+    text-align: center;
+}
+
+.studio-empty-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 12px;
+    color: var(--studio-muted);
+}
+
+.studio-shell ::selection,
+.studio-page ::selection {
+    background: var(--studio-accent);
+    color: var(--accent-foreground);
+}
+
+.studio-shell :where(input, textarea),
+.studio-page :where(input, textarea) {
+    caret-color: var(--studio-accent);
+}
+
+.studio-shell :where(button, a) {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.studio-nav {
+    position: relative;
+    border-bottom: 1px solid var(--studio-border);
+    background: var(--studio-panel);
+}
+
+.studio-nav-brand {
+    color: var(--studio-text);
+}
+
+.studio-nav-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 64px;
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--studio-muted);
+    transition: color 160ms;
+}
+
+.studio-nav-link:hover,
+.studio-nav-link[aria-current="page"] {
+    color: var(--studio-accent);
+}
+
+.studio-mobile-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    color: var(--studio-muted);
+}
+
+.studio-mobile-link[aria-current="page"] {
+    color: var(--studio-accent);
+    background: var(--studio-accent-soft);
+}
+
+.studio-home-banner {
+    position: relative;
+    overflow: hidden;
+    min-height: 216px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding-block: 28px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.studio-login-brand {
+    background: var(--studio-bg);
+    color: var(--studio-text);
+}
+
+.creation-home,
+.creation-login-page {
+    background:
+        radial-gradient(circle at 8% 12%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 30%),
+        radial-gradient(circle at 94% 88%, color-mix(in srgb, var(--success) 10%, transparent), transparent 32%),
+        var(--studio-bg);
+}
+
+.creation-home::before,
+.studio-login-brand::before {
+    position: absolute;
+    inset: 0;
+    content: "";
+    pointer-events: none;
+    background: radial-gradient(circle at 70% 40%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 44%);
+}
+
+.creation-shell {
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-surface-radius);
+    background: var(--studio-panel);
+    box-shadow: 0 24px 60px color-mix(in srgb, var(--studio-text) 12%, transparent);
+}
+
+.creation-copy {
+    background: color-mix(in srgb, var(--studio-panel) 88%, transparent);
+}
+
+.creation-code-stage {
+    background: color-mix(in srgb, var(--studio-raised) 62%, var(--studio-panel));
+}
+
+.creation-system-visual {
+    position: relative;
+    justify-self: end;
+    width: min(100%, 540px);
+    overflow: hidden;
+}
+
+.creation-system-visual::after {
+    position: absolute;
+    top: 0;
+    right: 11%;
+    width: 1px;
+    height: 100%;
+    content: "";
+    opacity: 0.72;
+    background: var(--studio-accent);
+    animation: creation-system-scan 5s ease-in-out infinite;
+}
+
+.creation-system-head,
+.creation-system-flow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 46px;
+    padding-inline: 18px;
+    border-bottom: 1px solid var(--studio-border);
+    color: var(--studio-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+}
+
+.creation-system-dots {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.creation-system-dots i,
+.creation-system-state i {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.creation-system-dots i:nth-child(1) { background: #ff5f57; }
+.creation-system-dots i:nth-child(2) { background: #febc2e; }
+.creation-system-dots i:nth-child(3) { background: #28c840; }
+
+.creation-system-file {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--studio-muted);
+}
+
+.creation-system-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--studio-text);
+}
+
+.creation-system-state i {
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+}
+
+.creation-system-code {
+    padding: 34px 22px;
+    background: color-mix(in srgb, var(--studio-raised) 62%, transparent);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: clamp(11px, 1.2vw, 14px);
+    line-height: 2;
+}
+
+.creation-system-code p {
+    margin: 0;
+    color: var(--studio-text);
+    white-space: nowrap;
+}
+
+.creation-system-code b {
+    display: inline-block;
+    width: 36px;
+    margin-right: 14px;
+    color: var(--studio-muted);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.creation-system-keyword {
+    color: #7c3aed;
+}
+
+.creation-system-function {
+    color: #0369a1;
+}
+
+.creation-system-property {
+    color: #b45309;
+}
+
+.creation-system-string {
+    color: #0f766e;
+}
+
+.creation-system-flow {
+    justify-content: flex-start;
+    gap: 11px;
+    min-height: 54px;
+    border-bottom: 0;
+}
+
+.creation-system-flow i {
+    width: 30px;
+    height: 1px;
+    background: var(--studio-border);
+}
+
+.creation-system-visual-compact {
+    width: min(100%, 450px);
+    margin-block: 28px;
+}
+
+.creation-system-visual-compact .creation-system-code {
+    padding-block: 16px;
+}
+
+.creation-system-visual-compact .creation-system-head {
+    min-height: 36px;
+}
+
+.creation-system-visual-compact .creation-system-flow {
+    min-height: 40px;
+}
+
+.creation-login-input {
+    --border-width-field: 1px;
+    --field-border-width: 1px;
+    --field-border: color-mix(in srgb, var(--field-foreground) 28%, var(--field-background));
+    --field-border-hover: color-mix(in srgb, var(--field-foreground) 42%, var(--field-background));
+    --field-border-focus: var(--accent);
+    --field-focus: var(--field-background);
+    min-height: 44px;
+}
+
+.creation-login-input [data-slot="input-group-prefix"],
+.creation-login-input [data-slot="input-group-suffix"] {
+    border-inline: 0;
+}
+
+.creation-login-card {
+    border: 1px solid var(--studio-border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--studio-panel) 94%, transparent);
+    box-shadow: 0 16px 36px color-mix(in srgb, var(--studio-text) 8%, transparent);
+}
+
+.creation-login-signal {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    color: var(--studio-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+.creation-login-signal-node {
+    padding: 6px 8px;
+    border: 1px solid var(--studio-border);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--studio-panel) 78%, transparent);
+}
+
+.creation-login-signal i {
+    width: 14px;
+    height: 1px;
+    background: var(--studio-border);
+}
+
+.creation-login-ambient,
+.creation-login-ambient span {
+    position: absolute;
+    pointer-events: none;
+}
+
+.creation-login-ambient {
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+}
+
+.creation-login-grid {
+    inset: -20%;
+    opacity: 0.38;
+    background-image:
+        linear-gradient(to right, color-mix(in srgb, var(--accent) 18%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--accent) 14%, transparent) 1px, transparent 1px);
+    background-size: 84px 84px;
+    mask-image: radial-gradient(ellipse at 50% 52%, #000 0%, transparent 72%);
+}
+
+.creation-login-orbit {
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: 999px;
+    transform-origin: center;
+}
+
+.creation-login-orbit--outer {
+    top: -42vw;
+    right: -29vw;
+    width: min(104vw, 1500px);
+    aspect-ratio: 1;
+}
+
+.creation-login-orbit--inner {
+    bottom: -34vw;
+    left: -29vw;
+    width: min(78vw, 1100px);
+    aspect-ratio: 1;
+    border-color: color-mix(in srgb, var(--success) 26%, transparent);
+}
+
+.creation-login-beacon {
+    width: 28rem;
+    height: 28rem;
+    border-radius: 999px;
+    filter: blur(28px);
+}
+
+.creation-login-beacon--top {
+    top: -16rem;
+    right: 7%;
+    opacity: 0.32;
+    background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.creation-login-beacon--bottom {
+    bottom: -20rem;
+    left: 3%;
+    opacity: 0.24;
+    background: color-mix(in srgb, var(--success) 24%, transparent);
+}
+
+.creation-login-pulse {
+    top: 16%;
+    left: 14%;
+    width: 10px;
+    height: 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 64%, transparent);
+    border-radius: 999px;
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+@keyframes creation-system-scan {
+    0%,
+    100% {
+        transform: translateY(-88%);
+    }
+    50% {
+        transform: translateY(88%);
+    }
+}
+
+.dark .creation-system-keyword { color: #c4b5fd; }
+.dark .creation-system-function { color: #7dd3fc; }
+.dark .creation-system-property { color: #fbbf24; }
+.dark .creation-system-string { color: #5eead4; }
+
+@media (max-width: 639px) {
+    .creation-home {
+        padding: 12px;
+    }
+
+    .creation-copy {
+        padding: 40px 24px;
+    }
+
+    .creation-code-stage {
+        padding: 20px 14px;
+    }
+
+    .creation-system-head,
+    .creation-system-flow {
+        padding-inline: 12px;
+    }
+
+    .creation-system-code {
+        padding: 20px 12px;
+        font-size: 10px;
+        line-height: 1.8;
+    }
+
+    .creation-system-code p {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .creation-system-code b {
+        width: 20px;
+        margin-right: 7px;
+    }
+
+    .creation-system-flow {
+        gap: 7px;
+        font-size: 9px;
+    }
+
+    .creation-system-flow i {
+        width: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .creation-system-visual::after {
+        animation: none;
+    }
+}
+
+.studio-config {
+    min-width: 0;
+}
+
+.studio-shell .thin-scrollbar,
+.studio-page {
+    scrollbar-color: var(--studio-border) transparent;
+    scrollbar-width: thin;
+}
+
+/* 全局隐藏滚动条外观，保留滚动能力。 */
+html,
+body,
+body * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+body *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+@media (max-width: 767px) {
+    .studio-container {
+        padding: 24px 16px;
+    }
+    .studio-page-header {
+        gap: 8px;
+        padding-bottom: 12px;
+    }
+    .studio-page-header-context {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .studio-page-header-meta {
+        max-width: none;
+    }
+    .studio-home-banner {
+        min-height: 240px;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .studio-panel,
+    .studio-card,
+    .studio-heading-icon,
+    .studio-empty-icon {
+        border-color: currentColor;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .studio-nav {
+        background: var(--studio-panel);
+        color: var(--studio-text);
+    }
+}

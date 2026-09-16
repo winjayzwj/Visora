@@ -216,7 +216,7 @@ function MentionHighlightText({ value, labels, placeholder }: { value: string; l
 function MentionMenu({ textarea, caretIndex, references, activeIndex, theme, onSelect }: { textarea: HTMLTextAreaElement; caretIndex: number; references: CanvasResourceReference[]; activeIndex: number; theme: (typeof canvasThemes)[keyof typeof canvasThemes]; onSelect: (reference: CanvasResourceReference) => void }) {
     const selectedRef = useRef(false);
     const rect = textarea.getBoundingClientRect();
-    const boundary = textarea.closest(".ant-modal-content")?.getBoundingClientRect() || { left: 8, top: 8, right: window.innerWidth - 8, bottom: window.innerHeight - 8 };
+    const boundary = textarea.closest('[role="dialog"]')?.getBoundingClientRect() || { left: 8, top: 8, right: window.innerWidth - 8, bottom: window.innerHeight - 8 };
     const menuWidth = 256;
     const maxMenuHeight = 224;
     const gap = 6;

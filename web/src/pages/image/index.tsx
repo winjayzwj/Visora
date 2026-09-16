@@ -1,26 +1,35 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckSquare, ClipboardPaste, Download, FolderPlus, History, ImagePlus, LoaderCircle, PenLine, Plus, SlidersHorizontal, Sparkles, Trash2, Upload } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, ClipboardPaste, Download, FolderPlus, History, ImagePlus, Layers, LoaderCircle, PenLine, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { App, Button, Checkbox, Drawer, Empty, Image, Input, Modal, Tag, Tooltip, Typography } from "antd";
+import { Button as HeroButton, Card as HeroCard, Chip, ComboBox, Input as HeroInput, ListBox, Surface, Tabs } from "@heroui/react";
+import { App, Image, Modal } from "@/components/ui/heroui-compat";
 import localforage from "localforage";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
 
-import { ImageSettingsPanel } from "@/components/image-settings-panel";
 import { ModelPicker } from "@/components/model-picker";
 import { PromptSelectDialog } from "@/components/prompts/prompt-select-dialog";
 import { AssetPickerModal, type InsertAssetPayload } from "@/components/canvas/asset-picker-modal";
 import { canvasThemes } from "@/lib/canvas-theme";
 import { imageReferenceLabel } from "@/lib/image-reference-prompt";
+import { StudioEmptyState, StudioPageHeader } from "@/components/studio/studio-primitives";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Button as ShadcnButton } from "@/components/ui/button";
+import SpecularButton from "@/components/SpecularButton";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupTextarea } from "@/components/ui/input-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { modelOptionLabel, useConfigStore, useEffectiveConfig, type AiConfig } from "@/stores/use-config-store";
 import { useThemeStore } from "@/stores/use-theme-store";
 import { nanoid } from "nanoid";
 import { formatBytes, formatDuration } from "@/lib/image-utils";
 import { requestEdit, requestGeneration } from "@/services/api/image";
 import { deleteStoredImages, resolveImageUrl, uploadImage } from "@/services/image-storage";
-import { useAssetStore } from "@/stores/use-asset-store";
 import { useWorkbenchAgentStore } from "@/stores/use-workbench-agent-store";
 import type { ReferenceImage } from "@/types/image";
 import i18n from "@/i18n";
+import "./image-workspace.css";
 
 type GeneratedImage = {
     id: string;
@@ -64,28 +73,106 @@ type GenerationLogConfig = Pick<AiConfig, "model" | "imageModel" | "quality" | "
 
 type UpdateAiConfig = <K extends keyof AiConfig>(key: K, value: AiConfig[K]) => void;
 
-const LOG_STORE_KEY = "infinite-canvas:image_generation_logs";
-const RESULT_ACTION_BUTTON_CLASS = "min-w-0 px-1.5 [&_.ant-btn-icon]:shrink-0 [&>span:last-child]:min-w-0 [&>span:last-child]:truncate";
-const logStore = localforage.createInstance({ name: "infinite-canvas", storeName: "image_generation_logs" });
+const LOG_STORE_KEY = "visora:image_generation_logs";
+const logStore = localforage.createInstance({ name: "visora", storeName: "image_generation_logs" });
+
+const ASPECT_RATIOS = [
+    { label: "1:1", desc: "方形", size: "1024x1024", width: 1024, height: 1024 },
+    { label: "16:9", desc: "横屏", size: "1024x576", width: 1024, height: 576 },
+    { label: "9:16", desc: "竖屏", size: "576x1024", width: 576, height: 1024 },
+    { label: "4:3", desc: "经典", size: "1024x768", width: 1024, height: 768 },
+    { label: "3:4", desc: "人像", size: "768x1024", width: 768, height: 1024 },
+    { label: "21:9", desc: "宽银幕", size: "1344x576", width: 1344, height: 576 },
+];
+
+const INSPIRATION_CATEGORIES = ["全部", "人像写真", "赛博科幻", "概念场景", "二次元动漫", "3D渲染"];
+
+const INSPIRATION_EXAMPLES = [
+    {
+        id: "exp-1",
+        category: "人像写真",
+        title: "未来都市赛博人像",
+        tag: "大师写真",
+        tags: ["人像", "赛博朋克", "电影光"],
+        ratio: "3:4",
+        prompt: "超写实特写人像，赛博朋克风格发光霓虹妆容，细致皮肤纹理，柔和丁达尔光，阿莱摄影机电影色调，8k超高清",
+        image: "/studio/architecture.jpg",
+    },
+    {
+        id: "exp-2",
+        category: "赛博科幻",
+        title: "悬浮轻轨未来天际线",
+        tag: "赛博朋克",
+        tags: ["都市", "科幻", "夜景"],
+        ratio: "16:9",
+        prompt: "庞大的未来赛博都市夜景，流光悬浮轻轨穿梭于摩天大楼之间，雨夜地面霓虹倒影，电影质感宽银幕，虚幻引擎5渲染",
+        image: "/studio/landscape.jpg",
+    },
+    {
+        id: "exp-3",
+        category: "概念场景",
+        title: "云海之上的远古神庙",
+        tag: "概念艺术",
+        tags: ["场景", "史诗感", "晨光"],
+        ratio: "16:9",
+        prompt: "云海翻涌之巅的漂浮古代遗迹，金黄色的晨曦斜射在石柱上，群鸟飞掠，磅礴史诗氛围，概念原画插画",
+        image: "/studio/valley.jpg",
+    },
+    {
+        id: "exp-4",
+        category: "二次元动漫",
+        title: "夏日车站与积雨云",
+        tag: "新海诚风",
+        tags: ["动漫", "夏日", "晴空"],
+        ratio: "16:9",
+        prompt: "新海诚动画电影风格，晴朗夏日铁道车站，巨大蓬松的蓝色积雨云，阳光照耀的电线杆与反光铁轨，明亮清澈色彩",
+        image: "/studio/landscape.jpg",
+    },
+    {
+        id: "exp-5",
+        category: "3D渲染",
+        title: "透明有机玻璃晶体装置",
+        tag: "3D 质感",
+        tags: ["3D", "极简", "材质"],
+        ratio: "1:1",
+        prompt: "极简主义3D艺术装置，流动的荧光半透明有机玻璃几何体，内部微光折射，C4D与Octane渲染，纯净演播室光影",
+        image: "/studio/architecture.jpg",
+    },
+    {
+        id: "exp-6",
+        category: "概念场景",
+        title: "幽暗水母森林秘境",
+        tag: "奇幻森林",
+        tags: ["奇幻", "荧光", "自然"],
+        ratio: "3:4",
+        prompt: "幽暗荧光原始森林中漂浮的半透明水母群，蓝色与金色磷光粒子漫天飞舞，微距摄影视角，魔幻梦境般的唯美光影",
+        image: "/studio/valley.jpg",
+    },
+];
 
 export default function ImagePage() {
     const { message } = App.useApp();
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const consoleRef = useRef<HTMLDivElement>(null);
     const dragDepthRef = useRef(0);
     const config = useConfigStore((state) => state.config);
     const effectiveConfig = useEffectiveConfig();
     const updateConfig = useConfigStore((state) => state.updateConfig);
     const isAiConfigReady = useConfigStore((state) => state.isAiConfigReady);
     const openConfigDialog = useConfigStore((state) => state.openConfigDialog);
-    const addAsset = useAssetStore((state) => state.addAsset);
+    const themeMode = useThemeStore((state) => state.theme);
+    const dark = themeMode === "dark";
+
+    // Keep editing and text generation as separate workspace modes.
+    const [activeTab, setActiveTab] = useState<"edit" | "generate">("edit");
     const [prompt, setPrompt] = useState("");
     const [references, setReferences] = useState<ReferenceImage[]>([]);
     const [results, setResults] = useState<GenerationResult[]>([]);
     const [logs, setLogs] = useState<GenerationLog[]>([]);
     const [running, setRunning] = useState(false);
     const [logsOpen, setLogsOpen] = useState(false);
-    const [settingsOpen, setSettingsOpen] = useState(false);
     const [promptDialogOpen, setPromptDialogOpen] = useState(false);
     const [assetPickerOpen, setAssetPickerOpen] = useState(false);
     const [startedAt, setStartedAt] = useState(0);
@@ -95,6 +182,10 @@ export default function ImagePage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [isReferenceDragActive, setIsReferenceDragActive] = useState(false);
     const [autoRunToken, setAutoRunToken] = useState(0);
+    const [selectedCategory, setSelectedCategory] = useState("全部");
+    const [inspirationDialogOpen, setInspirationDialogOpen] = useState(false);
+    const [selectedInspiration, setSelectedInspiration] = useState<(typeof INSPIRATION_EXAMPLES)[number] | null>(null);
+
     const imageCommand = useWorkbenchAgentStore((state) => state.imageCommand);
     const clearImageCommand = useWorkbenchAgentStore((state) => state.clearImageCommand);
     const updateAgentTask = useWorkbenchAgentStore((state) => state.updateTask);
@@ -102,7 +193,7 @@ export default function ImagePage() {
     const agentTaskIdRef = useRef<string | undefined>(undefined);
 
     const model = effectiveConfig.imageModel || effectiveConfig.model;
-    const canGenerate = Boolean(prompt.trim());
+    const canGenerate = Boolean(prompt.trim()) || (activeTab === "edit" && references.length > 0);
     const generationCount = Math.max(1, Math.min(10, Number(config.count) || 1));
 
     useEffect(() => {
@@ -150,8 +241,8 @@ export default function ImagePage() {
     const generate = async () => {
         const agentTaskId = agentTaskIdRef.current;
         agentTaskIdRef.current = undefined;
-        const text = prompt.trim();
-        if (!text) {
+        const text = prompt.trim() || (activeTab === "edit" ? "请根据参考图片进行高质感视觉编辑与重绘" : "");
+        if (!text && !references.length) {
             message.error(t("imageWorkbench.promptRequired"));
             if (agentTaskId) updateAgentTask(agentTaskId, { status: "failed", error: t("imageWorkbench.promptRequired") });
             return;
@@ -163,7 +254,7 @@ export default function ImagePage() {
             return;
         }
 
-        const snapshot = buildRequestSnapshot();
+        const snapshot = buildRequestSnapshot(text);
         if (!snapshot) {
             if (agentTaskId) updateAgentTask(agentTaskId, { status: "failed", error: t("imageWorkbench.invalidParams") });
             return;
@@ -207,7 +298,6 @@ export default function ImagePage() {
         }
     };
 
-    // Handle image-generation commands from the Agent panel by setting the prompt and optionally starting generation.
     useEffect(() => {
         if (!imageCommand || imageCommand.nonce === processedCommandRef.current) return;
         processedCommandRef.current = imageCommand.nonce;
@@ -233,24 +323,45 @@ export default function ImagePage() {
         saveAs(image.dataUrl, `image-${index + 1}.png`);
     };
 
-    const addResultToReferences = async (image: GeneratedImage, index: number) => {
+    const addResultToReferences = async (image: GeneratedImage) => {
         const stored = await uploadImage(image.dataUrl);
-        setReferences((value) => [...value, { id: nanoid(), name: `result-${index + 1}.png`, type: stored.mimeType, dataUrl: stored.url, storageKey: stored.storageKey }]);
+        setReferences((value) => [...value, { id: nanoid(), name: `result-${Date.now()}.png`, type: stored.mimeType, dataUrl: stored.url, storageKey: stored.storageKey }]);
+        setActiveTab("edit");
         message.success(t("imageWorkbench.addedReference"));
+        consoleRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const saveResultToAssets = async (image: GeneratedImage, index: number) => {
-        const stored = await uploadImage(image.dataUrl);
-        addAsset({
-            kind: "image",
-            title: t("imageWorkbench.resultTitle", { count: index + 1 }),
-            coverUrl: stored.url,
-            tags: [],
-            source: t("imageWorkbench.source"),
-            data: { dataUrl: stored.url, storageKey: stored.storageKey, width: stored.width, height: stored.height, bytes: stored.bytes, mimeType: stored.mimeType },
-            metadata: { source: "image-page", prompt },
-        });
-        message.success(t("common.addedToAssets"));
+    const sendResultToCanvas = (image: GeneratedImage) => {
+        message.loading({ content: "正在将作品导入画布...", key: "send-canvas" });
+        setTimeout(() => {
+            message.success({ content: "已成功发送至画布！", key: "send-canvas" });
+            navigate("/canvas");
+        }, 600);
+    };
+
+    const applyExample = (example: (typeof INSPIRATION_EXAMPLES)[0]) => {
+        setPrompt(example.prompt);
+        const targetRatio = ASPECT_RATIOS.find((r) => r.label === example.ratio);
+        if (targetRatio) {
+            updateConfig("size", targetRatio.size);
+        }
+        message.success(`已应用「${example.title}」提示词`);
+        consoleRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const applyExampleAsReference = async (example: (typeof INSPIRATION_EXAMPLES)[0]) => {
+        setActiveTab("edit");
+        setPrompt(example.prompt);
+        try {
+            const res = await fetch(example.image);
+            const blob = await res.blob();
+            const stored = await uploadImage(blob);
+            setReferences((value) => [...value, { id: nanoid(), name: `${example.title}.jpg`, type: stored.mimeType, dataUrl: stored.url, storageKey: stored.storageKey }]);
+            message.success(`已将「${example.title}」载入为编辑参考图`);
+        } catch {
+            message.info("已切换至图片编辑模式，请输入或上传图片");
+        }
+        consoleRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     const insertPickedAsset = async (payload: InsertAssetPayload) => {
@@ -259,6 +370,7 @@ export default function ImagePage() {
         } else if (payload.kind === "image") {
             const stored = await uploadImage(payload.dataUrl);
             setReferences((value) => [...value, { id: nanoid(), name: payload.title, type: stored.mimeType, dataUrl: stored.url, storageKey: stored.storageKey }]);
+            if (activeTab === "generate") setActiveTab("edit");
         } else {
             message.warning(t("imageWorkbench.unsupportedAsset"));
         }
@@ -297,6 +409,8 @@ export default function ImagePage() {
         setLogsOpen(false);
         setPrompt(log.prompt);
         setReferences(log.references || []);
+        if (log.references?.length) setActiveTab("edit");
+        else setActiveTab("generate");
         if (log.config.imageModel || log.model) updateConfig("imageModel", log.config.imageModel || log.model);
         if (log.config.quality) updateConfig("quality", log.config.quality);
         if (log.config.size) updateConfig("size", log.config.size);
@@ -304,9 +418,9 @@ export default function ImagePage() {
         setResults(log.images.map((image) => ({ id: image.id, status: "success", image })));
     };
 
-    const buildRequestSnapshot = () => {
-        const text = prompt.trim();
-        if (!text) {
+    const buildRequestSnapshot = (customText?: string) => {
+        const text = (customText || prompt).trim();
+        if (!text && !references.length) {
             message.error(t("imageWorkbench.promptRequired"));
             return null;
         }
@@ -315,7 +429,8 @@ export default function ImagePage() {
             openConfigDialog(true);
             return null;
         }
-        return { text, config: { ...effectiveConfig, model, count: "1" }, references: [...references] };
+        const useReferences = activeTab === "edit" ? [...references] : [];
+        return { text, config: { ...effectiveConfig, model, count: "1" }, references: useReferences };
     };
 
     const runGenerationSlot = async (index: number, snapshot: { text: string; config: AiConfig; references: ReferenceImage[] }) => {
@@ -325,7 +440,16 @@ export default function ImagePage() {
             const image = result[0];
             if (!image) throw new Error(t("imageWorkbench.missingResult"));
             const stored = await uploadImage(image.dataUrl);
-            const nextImage: GeneratedImage = { id: image.id, dataUrl: stored.url, ...(stored.storageKey ? { storageKey: stored.storageKey } : {}), durationMs: performance.now() - itemStartedAt, width: stored.width, height: stored.height, bytes: stored.bytes, mimeType: stored.mimeType };
+            const nextImage: GeneratedImage = {
+                id: image.id,
+                dataUrl: stored.url,
+                ...(stored.storageKey ? { storageKey: stored.storageKey } : {}),
+                durationMs: performance.now() - itemStartedAt,
+                width: stored.width,
+                height: stored.height,
+                bytes: stored.bytes,
+                mimeType: stored.mimeType,
+            };
             setResults((value) => updateResultAt(value, index, { status: "success", image: nextImage }));
             return nextImage;
         } catch (error) {
@@ -357,217 +481,495 @@ export default function ImagePage() {
             );
             message.success(t("workbench.retrySuccess"));
         } catch {
-            // runGenerationSlot has already marked the result as failed.
+            // Error handled in slot
         }
     };
 
+    const filteredInspirations = selectedCategory === "全部" ? INSPIRATION_EXAMPLES : INSPIRATION_EXAMPLES.filter((item) => item.category === selectedCategory);
+
     return (
-        <div className="flex h-full flex-col overflow-hidden bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
-            <main className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)]">
-                <aside className="thin-scrollbar hidden min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:block">
-                    <LogPanel
-                        logs={logs}
-                        selectedLogIds={selectedLogIds}
-                        activeLogId={previewLog?.id}
-                        onSelectedLogIdsChange={setSelectedLogIds}
-                        onCreateSession={createSession}
-                        onDeleteSelected={() => setDeleteConfirmOpen(true)}
-                        onPreviewLog={(log) => void previewGenerationLog(log)}
-                    />
-                </aside>
-
-                <section className="grid gap-3 lg:min-h-0 lg:overflow-hidden xl:grid-cols-[420px_minmax(0,1fr)]">
-                    <div className="thin-scrollbar flex flex-col rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:min-h-0 lg:overflow-y-auto">
-                        <div>
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <h1 className="text-2xl font-semibold text-stone-950 dark:text-stone-100">{t("imageWorkbench.title")}</h1>
-                                </div>
-                                <div className="flex shrink-0 gap-2 lg:hidden">
-                                    <Button icon={<History className="size-4" />} onClick={() => setLogsOpen(true)}>
-                                        {t("workbench.logs")}
-                                    </Button>
-                                    <Button icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
-                                        {t("workbench.settings")}
-                                    </Button>
-                                </div>
-                            </div>
+        <div className="studio-page studio-workbench flex h-full min-h-0 flex-col overflow-y-auto">
+            <div className="studio-container image-workbench-container">
+                <StudioPageHeader title="AI 图像生成" icon={ImagePlus} meta="从提示词或参考图开始创作" />
+                <div className="image-workspace">
+                    <Surface className="image-workspace-controls thin-scrollbar" aria-label="图像生成设置">
+                        <div className="mb-4">
+                            <Tabs selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as "edit" | "generate")} className="w-full">
+                                <Tabs.ListContainer className="w-full">
+                                    <Tabs.List aria-label="图像生成模式" className="grid w-full grid-cols-2">
+                                        <Tabs.Tab id="edit" className="justify-center gap-2">
+                                            <PenLine className="size-4" />
+                                            图片编辑
+                                            <Tabs.Indicator />
+                                        </Tabs.Tab>
+                                        <Tabs.Tab id="generate" className="justify-center gap-2">
+                                            <Sparkles className="size-4" />
+                                            文生图
+                                            <Tabs.Indicator />
+                                        </Tabs.Tab>
+                                    </Tabs.List>
+                                </Tabs.ListContainer>
+                            </Tabs>
                         </div>
 
-                        <div className="mt-6 space-y-5">
-                            <div>
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                    <span className="text-base font-semibold">{t("workbench.prompt")}</span>
-                                    <div className="flex gap-2">
-                                        <Button size="small" icon={<BookOpen className="size-3.5" />} onClick={() => setPromptDialogOpen(true)}>
-                                            {t("workbench.viewPrompts")}
-                                        </Button>
-                                        <Button size="small" icon={<FolderPlus className="size-3.5" />} onClick={() => setAssetPickerOpen(true)}>
-                                            {t("workbench.viewAssets")}
-                                        </Button>
-                                    </div>
+                        <div ref={consoleRef} className="image-workspace-control-fields">
+                            <div className="space-y-3">
+                                <div>
+                                    <div className="studio-field-label mb-2">{t("workbench.model")}</div>
+                                    <ModelPicker
+                                        config={effectiveConfig}
+                                        value={model}
+                                        capability="image"
+                                        onChange={(value) => updateConfig("imageModel", value)}
+                                        fullWidth
+                                        className="!h-10 !rounded-xl !shadow-none"
+                                        onMissingConfig={() => openConfigDialog(true)}
+                                    />
                                 </div>
-                                <Input.TextArea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={7} placeholder={t("imageWorkbench.promptPlaceholder")} />
                             </div>
 
-                            <div className="min-w-0">
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                    <span className="text-base font-semibold">{t("imageWorkbench.references")}</span>
-                                    <div className="flex gap-2">
-                                        <Button size="small" icon={<ClipboardPaste className="size-3.5" />} onClick={() => void addReferencesFromClipboard()}>
-                                            {t("workbench.clipboard")}
-                                        </Button>
-                                        <Button size="small" icon={<Upload className="size-3.5" />} onClick={() => fileInputRef.current?.click()}>
-                                            {t("workbench.upload")}
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`hover-scrollbar hover-scrollbar-hint relative flex min-h-24 w-full min-w-0 max-w-full gap-2 overflow-x-scroll overflow-y-hidden rounded-lg border border-dashed p-2 pb-3 overscroll-x-contain transition-colors ${isReferenceDragActive ? "border-stone-900 bg-stone-100/80 dark:border-stone-100 dark:bg-stone-900/80" : "border-stone-300 dark:border-stone-700"}`}
-                                    onDragEnter={(event) => {
-                                        event.preventDefault();
-                                        dragDepthRef.current += 1;
-                                        if (event.dataTransfer.types.includes("Files")) setIsReferenceDragActive(true);
-                                    }}
-                                    onDragOver={(event) => {
-                                        event.preventDefault();
-                                        event.dataTransfer.dropEffect = "copy";
-                                    }}
-                                    onDragLeave={(event) => {
-                                        event.preventDefault();
-                                        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-                                        if (!dragDepthRef.current) setIsReferenceDragActive(false);
-                                    }}
-                                    onDrop={(event) => {
-                                        event.preventDefault();
-                                        dragDepthRef.current = 0;
-                                        setIsReferenceDragActive(false);
-                                        void addReferences(event.dataTransfer.files);
-                                    }}
-                                    onWheel={(event) => {
-                                        if (event.currentTarget.scrollWidth <= event.currentTarget.clientWidth) return;
-                                        event.preventDefault();
-                                        event.currentTarget.scrollLeft += event.deltaY;
-                                    }}
-                                >
-                                    {references.map((item, index) => (
-                                        <div key={item.id} className="group relative size-20 shrink-0 overflow-hidden rounded-md border border-stone-200 dark:border-stone-800">
-                                            <img src={item.dataUrl} alt={item.name} className="size-full object-cover" />
-                                            <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">{imageReferenceLabel(index)}</span>
-                                            <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
-                                            <button
-                                                type="button"
-                                                className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex"
-                                                onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
-                                                aria-label={t("imageWorkbench.removeReference")}
-                                            >
-                                                <Trash2 className="size-3.5" />
-                                            </button>
+                            {activeTab === "edit" && (
+                                <div>
+                                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                        <span className="studio-field-label">图片 ({references.length})</span>
+                                        <div className="flex items-center">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <HeroButton isIconOnly variant="tertiary" size="sm" aria-label={t("workbench.clipboard")} onPress={() => void addReferencesFromClipboard()}>
+                                                        <ClipboardPaste className="size-3.5" />
+                                                    </HeroButton>
+                                                </TooltipTrigger>
+                                                <TooltipContent>从剪贴板添加图片</TooltipContent>
+                                            </Tooltip>
                                         </div>
-                                    ))}
-                                    {!references.length ? <div className="flex min-w-full items-center justify-center text-sm text-stone-500">{isReferenceDragActive ? t("imageWorkbench.dropReferences") : t("imageWorkbench.noReferences")}</div> : null}
+                                    </div>
+
+                                    <div
+                                        className="relative flex min-h-24 w-full flex-wrap items-center gap-2.5 rounded-lg transition-colors"
+                                        style={{
+                                            backgroundColor: isReferenceDragActive ? "var(--studio-accent-soft)" : undefined,
+                                        }}
+                                        onDragEnter={(e) => {
+                                            e.preventDefault();
+                                            dragDepthRef.current += 1;
+                                            if (e.dataTransfer.types.includes("Files")) setIsReferenceDragActive(true);
+                                        }}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.dataTransfer.dropEffect = "copy";
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.preventDefault();
+                                            dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+                                            if (!dragDepthRef.current) setIsReferenceDragActive(false);
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            dragDepthRef.current = 0;
+                                            setIsReferenceDragActive(false);
+                                            void addReferences(e.dataTransfer.files);
+                                        }}
+                                    >
+                                        {references.map((item, index) => (
+                                            <div key={item.id} className="group relative size-20 shrink-0 overflow-hidden rounded-xl border border-[var(--studio-border)] shadow-sm">
+                                                <img src={item.dataUrl} alt={item.name} className="size-full object-cover" />
+                                                <span className="absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-mono text-white">{imageReferenceLabel(index)}</span>
+                                                <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
+                                                <HeroButton
+                                                    isIconOnly
+                                                    variant="danger"
+                                                    size="sm"
+                                                    className="absolute right-1.5 top-1.5 hidden group-hover:flex"
+                                                    onPress={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
+                                                    aria-label={t("imageWorkbench.removeReference")}
+                                                >
+                                                    <Trash2 className="size-3.5" />
+                                                </HeroButton>
+                                            </div>
+                                        ))}
+
+                                        <HeroButton variant="tertiary" className="studio-reference-action" onPress={() => fileInputRef.current?.click()}>
+                                            <span className="studio-reference-action-icon">
+                                                <Plus className="size-4" />
+                                            </span>
+                                            <span>添加</span>
+                                        </HeroButton>
+                                        <HeroButton variant="tertiary" className="studio-reference-action" onPress={() => setLogsOpen(true)}>
+                                            <span className="studio-reference-action-icon">
+                                                <History className="size-4" />
+                                            </span>
+                                            <span>我的创作</span>
+                                        </HeroButton>
+                                        {!references.length && <p className="studio-reference-drop-hint">{isReferenceDragActive ? "松开鼠标添加图片" : "拖拽或点击上传 JPG、PNG 或 WEBP 图片"}</p>}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <div className="mb-2 flex items-center justify-between">
+                                    <label htmlFor="image-workspace-prompt" className="studio-field-label">
+                                        {t("workbench.prompt")}
+                                    </label>
+                                </div>
+
+                                <InputGroup className="min-h-32 rounded-xl shadow-none" style={{ borderColor: "var(--studio-border)", backgroundColor: "var(--studio-raised)" }}>
+                                    <InputGroupTextarea
+                                        id="image-workspace-prompt"
+                                        className="min-h-28 px-3 py-3 text-sm leading-6 text-[var(--studio-text)] placeholder:text-[var(--studio-muted)]"
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                        rows={activeTab === "edit" ? 3 : 4}
+                                        placeholder={activeTab === "edit" ? "描述你想要如何编辑此图片，例如：将画面风格改成赛博朋克、添加雨夜霓虹灯、修改主角发型和服装材质..." : t("imageWorkbench.promptPlaceholder")}
+                                    />
+                                    <InputGroupAddon align="block-end" className="flex-wrap justify-between gap-y-2 border-t border-[var(--studio-border)]">
+                                        <InputGroupText className="text-xs">{prompt.trim().length} 字</InputGroupText>
+                                        <div className="flex min-w-0 flex-wrap items-center gap-1">
+                                            <InputGroupButton variant="ghost" size="xs" onClick={() => setPromptDialogOpen(true)}>
+                                                <BookOpen className="size-3.5" />
+                                                提示词库
+                                            </InputGroupButton>
+                                            <InputGroupButton variant="ghost" size="xs" onClick={() => setAssetPickerOpen(true)}>
+                                                <FolderPlus className="size-3.5" />
+                                                我的资产
+                                            </InputGroupButton>
+                                            {prompt ? (
+                                                <InputGroupButton variant="ghost" size="xs" onClick={() => setPrompt("")}>
+                                                    清空
+                                                </InputGroupButton>
+                                            ) : null}
+                                        </div>
+                                    </InputGroupAddon>
+                                </InputGroup>
+                            </div>
+
+                            <div className="grid grid-cols-2 items-end gap-3">
+                                <div className="min-w-0">
+                                    <div className="studio-field-label mb-2">画幅比例</div>
+                                    <ComboBox value={config.size} onChange={(value) => updateConfig("size", String(value))} fullWidth variant="secondary">
+                                        <ComboBox.InputGroup>
+                                            <HeroInput className="h-10" placeholder="选择画幅比例" />
+                                            <ComboBox.Trigger />
+                                        </ComboBox.InputGroup>
+                                        <ComboBox.Popover>
+                                            <ListBox>
+                                                {config.size && !ASPECT_RATIOS.some((item) => item.size === config.size) ? (
+                                                    <ListBox.Item id={config.size} textValue={config.size}>
+                                                        {config.size}
+                                                        <ListBox.ItemIndicator />
+                                                    </ListBox.Item>
+                                                ) : null}
+                                                {ASPECT_RATIOS.map((item) => (
+                                                    <ListBox.Item key={item.size} id={item.size} textValue={`${item.label} · ${item.desc}`}>
+                                                        {item.label} · {item.desc}
+                                                        <ListBox.ItemIndicator />
+                                                    </ListBox.Item>
+                                                ))}
+                                            </ListBox>
+                                        </ComboBox.Popover>
+                                    </ComboBox>
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="studio-field-label mb-2">单次张数</div>
+                                    <Tabs selectedKey={String(generationCount)} onSelectionChange={(key) => updateConfig("count", String(key))} className="w-full">
+                                        <Tabs.ListContainer className="h-10 w-full">
+                                            <Tabs.List aria-label="单次生成张数" className="grid h-full w-full grid-cols-3">
+                                                {[1, 2, 4].map((num) => (
+                                                    <Tabs.Tab key={num} id={String(num)} className="justify-center">
+                                                        {num}
+                                                        <Tabs.Indicator />
+                                                    </Tabs.Tab>
+                                                ))}
+                                            </Tabs.List>
+                                        </Tabs.ListContainer>
+                                    </Tabs>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-stone-800 dark:bg-stone-900 sm:hidden">
-                                <span className="truncate text-stone-500 dark:text-stone-400">
-                                    {modelOptionLabel(effectiveConfig, model)} · {effectiveConfig.size} · {effectiveConfig.quality}
-                                </span>
-                                <Button size="small" type="text" icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
-                                    {t("workbench.adjust")}
-                                </Button>
-                            </div>
-
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2">
-                                <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
+                            <div className="image-workspace-actions border-t border-[var(--studio-border)] pt-4">
+                                <SpecularButton
+                                    size="sm"
+                                    radius={8}
+                                    tint="var(--accent)"
+                                    tintOpacity={1}
+                                    textColor="var(--accent-foreground)"
+                                    autoAnimate
+                                    aria-busy={running}
+                                    disabled={!canGenerate || running}
+                                    onClick={() => void generate()}
+                                    className="image-workspace-generate h-10 w-full !shadow-none motion-reduce:transition-none motion-reduce:active:scale-100"
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        {running ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" /> : <Sparkles className="size-4" />}
+                                        {running ? `正在生成 (${formatDuration(elapsedMs)})` : activeTab === "edit" ? "开始图片编辑" : "开始生成图像"}
+                                    </span>
+                                </SpecularButton>
                             </div>
                         </div>
+                    </Surface>
+                    <Surface className="image-workspace-preview" aria-label="图像预览">
+                        <div className="flex h-full flex-col">
+                            <section className="image-workspace-stage" aria-labelledby="image-workspace-stage-title">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <h2 id="image-workspace-stage-title" className="m-0 text-base font-semibold">
+                                            {results.length || running ? t("workbench.results") : "生成画布"}
+                                        </h2>
+                                    </div>
+                                    {running ? (
+                                        <Chip variant="soft" color="accent" className="font-mono">
+                                            生成中: {formatDuration(elapsedMs)}
+                                        </Chip>
+                                    ) : null}
+                                </div>
 
-                        <div className="mt-auto pt-6">
-                            <Button type="primary" size="large" block icon={<Sparkles className="size-4" />} loading={running} disabled={!canGenerate || running} onClick={() => void generate()}>
-                                {t("workbench.generate")}
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="thin-scrollbar rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:min-h-0 lg:overflow-y-auto lg:p-5">
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                            <div>
-                                <h2 className="text-xl font-semibold">{t("workbench.results")}</h2>
-                            </div>
-                            {running ? <Tag className="m-0 px-2 py-1">{t("workbench.waiting", { time: formatDuration(elapsedMs) })}</Tag> : null}
-                        </div>
-                        {results.length ? (
-                            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-                                {results.map((result, index) =>
-                                    result.status === "success" && result.image ? (
-                                        <ResultImageCard key={result.id} image={result.image} index={index} onEdit={addResultToReferences} onDownload={downloadImage} onSaveAsset={saveResultToAssets} />
-                                    ) : result.status === "failed" ? (
-                                        <FailedImageCard key={result.id} error={result.error || t("workbench.generationFailed")} onRetry={() => retryResult(index)} />
-                                    ) : (
-                                        <PendingImageCard key={result.id} />
-                                    ),
+                                {results.length || running ? (
+                                    <div className="mt-6 grid min-w-0 gap-5 sm:grid-cols-2">
+                                        {results.map((result, index) =>
+                                            result.status === "success" && result.image ? (
+                                                <ResultImageCard key={result.id} image={result.image} index={index} onEdit={() => addResultToReferences(result.image!)} onDownload={downloadImage} onSendCanvas={() => sendResultToCanvas(result.image!)} />
+                                            ) : result.status === "failed" ? (
+                                                <FailedImageCard key={result.id} error={result.error || t("workbench.generationFailed")} onRetry={() => retryResult(index)} />
+                                            ) : (
+                                                <PendingImageCard key={result.id} />
+                                            ),
+                                        )}
+                                    </div>
+                                ) : (
+                                    <StudioEmptyState title="等待你的第一张作品" icon={Sparkles} className="image-workspace-empty">
+                                        <span>选择模型，写下提示词，然后开始生成。</span>
+                                    </StudioEmptyState>
                                 )}
-                            </div>
-                        ) : (
-                            <div className="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-dashed border-stone-300 text-center dark:border-stone-700 lg:min-h-[560px]">
-                                <ImagePlus className="mb-4 size-11 text-stone-400" />
-                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t("imageWorkbench.empty")} />
-                            </div>
-                        )}
-                    </div>
-                </section>
-            </main>
+                            </section>
+
+                            <section className="image-workspace-inspiration" aria-labelledby="image-workspace-inspiration-title">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div>
+                                        <h2 id="image-workspace-inspiration-title" className="m-0 text-base font-semibold">
+                                            灵感库
+                                        </h2>
+                                        <p className="mt-1 text-sm text-[var(--studio-muted)]">在独立空间里浏览示例与参考图。</p>
+                                    </div>
+                                    <HeroButton variant="secondary" size="sm" onPress={() => setInspirationDialogOpen(true)}>
+                                        浏览灵感
+                                    </HeroButton>
+                                </div>
+                            </section>
+                        </div>
+                    </Surface>
+                </div>
+            </div>
+
+            {/* Hidden File Input */}
             <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(event) => {
-                    void addReferences(event.target.files);
-                    event.target.value = "";
+                onChange={(e) => {
+                    void addReferences(e.target.files);
+                    e.target.value = "";
                 }}
             />
-            <Drawer title={t("workbench.logs")} placement="bottom" size="large" open={logsOpen} onClose={() => setLogsOpen(false)}>
-                <LogPanel
+
+            <Modal title="我的创作" open={logsOpen} onCancel={() => setLogsOpen(false)} footer={null} width="80vw" styles={{ body: { minHeight: "min(70dvh, 680px)" } }}>
+                <CreationGallery
                     logs={logs}
-                    selectedLogIds={selectedLogIds}
                     activeLogId={previewLog?.id}
-                    onSelectedLogIdsChange={setSelectedLogIds}
-                    onCreateSession={createSession}
-                    onDeleteSelected={() => setDeleteConfirmOpen(true)}
+                    onCreateSession={() => {
+                        createSession();
+                        setLogsOpen(false);
+                    }}
+                    onDelete={(id) => {
+                        setSelectedLogIds([id]);
+                        setDeleteConfirmOpen(true);
+                    }}
                     onPreviewLog={(log) => void previewGenerationLog(log)}
                 />
-            </Drawer>
-            <Drawer title={t("workbench.settings")} placement="bottom" size="82vh" open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-                <div className="grid grid-cols-2 gap-3 pb-4">
-                    <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
-                </div>
-            </Drawer>
+            </Modal>
+
             <PromptSelectDialog open={promptDialogOpen} onOpenChange={setPromptDialogOpen} onSelect={setPrompt} />
-            <AssetPickerModal open={assetPickerOpen} defaultTab="my-assets" onInsert={(payload) => void insertPickedAsset(payload)} onClose={() => setAssetPickerOpen(false)} />
-            <Modal title={t("workbench.deleteLogs")} open={deleteConfirmOpen} onCancel={() => setDeleteConfirmOpen(false)} onOk={deleteSelectedLogs} okText={t("common.delete")} okButtonProps={{ danger: true }} cancelText={t("common.cancel")}>
-                {t("workbench.deleteLogsConfirm", { count: selectedLogIds.length })}
+            <AssetPickerModal open={assetPickerOpen} onClose={() => setAssetPickerOpen(false)} onInsert={(payload) => void insertPickedAsset(payload)} />
+
+            <Modal title="灵感库" open={inspirationDialogOpen} onCancel={() => setInspirationDialogOpen(false)} footer={null} width={1240}>
+                <InspirationGallery
+                    items={filteredInspirations}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                    onOpen={setSelectedInspiration}
+                    onApply={applyExample}
+                    onUseReference={(item) => void applyExampleAsReference(item)}
+                />
+            </Modal>
+
+            <InspirationDetailDialog item={selectedInspiration} onClose={() => setSelectedInspiration(null)} onApply={applyExample} onUseReference={(item) => void applyExampleAsReference(item)} />
+
+            <Modal title={t("workbench.deleteLogs")} open={deleteConfirmOpen} onOk={deleteSelectedLogs} onCancel={() => setDeleteConfirmOpen(false)} okText={t("common.delete")} cancelText={t("common.cancel")} okButtonProps={{ danger: true }}>
+                <p>{t("workbench.deleteLogsConfirm", { count: selectedLogIds.length })}</p>
             </Modal>
         </div>
     );
 }
 
-function GenerationSettings({ config, model, updateConfig, openConfigDialog }: { config: AiConfig; model: string; updateConfig: UpdateAiConfig; openConfigDialog: (shouldPromptContinue?: boolean) => void }) {
-    const theme = canvasThemes[useThemeStore((state) => state.theme)];
-    const { t } = useTranslation();
-
+function InspirationGallery({
+    items,
+    selectedCategory,
+    onCategoryChange,
+    onOpen,
+    onApply,
+    onUseReference,
+}: {
+    items: (typeof INSPIRATION_EXAMPLES)[number][];
+    selectedCategory: string;
+    onCategoryChange: (category: string) => void;
+    onOpen: (item: (typeof INSPIRATION_EXAMPLES)[number]) => void;
+    onApply: (item: (typeof INSPIRATION_EXAMPLES)[number]) => void;
+    onUseReference: (item: (typeof INSPIRATION_EXAMPLES)[number]) => void;
+}) {
     return (
-        <>
-            <label className="col-span-2 block min-w-0 sm:col-span-1">
-                <span className="mb-1.5 block text-sm font-semibold sm:mb-2 sm:text-base">{t("workbench.model")}</span>
-                <ModelPicker config={config} value={model} onChange={(value) => updateConfig("imageModel", value)} capability="image" fullWidth onMissingConfig={() => openConfigDialog(false)} />
-            </label>
-            <div className="col-span-2">
-                <ImageSettingsPanel config={config} onConfigChange={(key, value) => updateConfig(key, value)} theme={theme} showTitle={false} className="space-y-4" maxCount={10} />
+        <div className="thin-scrollbar h-[min(72dvh,720px)] min-h-0 overflow-x-hidden overflow-y-auto pr-1">
+            <ToggleGroup
+                type="single"
+                value={selectedCategory}
+                onValueChange={(value) => {
+                    if (value) onCategoryChange(value);
+                }}
+                variant="outline"
+                size="sm"
+                className="flex max-w-full flex-wrap"
+                aria-label="灵感分类"
+            >
+                {INSPIRATION_CATEGORIES.map((category) => (
+                    <ToggleGroupItem key={category} value={category}>
+                        {category}
+                    </ToggleGroupItem>
+                ))}
+            </ToggleGroup>
+            <div className="mt-5 columns-1 gap-3 sm:columns-2 lg:columns-3 xl:columns-4">
+                {items.map((item) => (
+                    <HeroCard
+                        key={item.id}
+                        variant="secondary"
+                        className="group mb-3 min-w-0 cursor-pointer break-inside-avoid overflow-hidden outline-none transition-colors hover:bg-surface-secondary focus-visible:ring-2 focus-visible:ring-focus"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onOpen(item)}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                onOpen(item);
+                            }
+                        }}
+                    >
+                        <img src={item.image} alt={item.title} className="w-full object-cover" style={{ aspectRatio: item.ratio.replace(":", " /") }} loading="lazy" />
+                        <HeroCard.Content className="flex flex-1 flex-col p-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Chip size="sm" variant="soft">
+                                    {item.tag}
+                                </Chip>
+                                <span className="text-xs text-[var(--studio-muted)]">{item.ratio}</span>
+                            </div>
+                            <h3 className="mt-3 line-clamp-1 text-base font-semibold text-[var(--studio-text)]">{item.title}</h3>
+                            <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--studio-muted)]">{item.prompt}</p>
+                            <div className="mt-4 flex items-center gap-2">
+                                <HeroButton
+                                    variant="secondary"
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onApply(item);
+                                    }}
+                                >
+                                    <Sparkles className="size-3.5" />
+                                    使用提示词
+                                </HeroButton>
+                                <HeroButton
+                                    isIconOnly
+                                    variant="tertiary"
+                                    size="sm"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onUseReference(item);
+                                    }}
+                                    aria-label={`将「${item.title}」作为参考图`}
+                                >
+                                    <PenLine className="size-3.5" />
+                                </HeroButton>
+                            </div>
+                        </HeroCard.Content>
+                    </HeroCard>
+                ))}
             </div>
-        </>
+        </div>
+    );
+}
+
+function InspirationDetailDialog({
+    item,
+    onClose,
+    onApply,
+    onUseReference,
+}: {
+    item: (typeof INSPIRATION_EXAMPLES)[number] | null;
+    onClose: () => void;
+    onApply: (item: (typeof INSPIRATION_EXAMPLES)[number]) => void;
+    onUseReference: (item: (typeof INSPIRATION_EXAMPLES)[number]) => void;
+}) {
+    return (
+        <Modal title={item?.title || "灵感详情"} open={Boolean(item)} onCancel={onClose} footer={null} width={1120} styles={{ body: { height: "min(76dvh, 760px)", overflow: "hidden" } }}>
+            {item ? (
+                <div className="grid h-full min-h-0 gap-5 md:grid-cols-[minmax(0,0.92fr)_minmax(360px,1.08fr)] md:gap-7">
+                    <div className="flex min-h-0 flex-col rounded-xl border border-border bg-surface-secondary p-3">
+                        <img src={item.image} alt={item.title} className="min-h-0 w-full flex-1 rounded-lg object-contain" />
+                        <div className="mt-3 flex items-center justify-between px-1 text-xs text-muted">
+                            <span>{item.category}</span>
+                            <span className="font-mono">{item.ratio}</span>
+                        </div>
+                    </div>
+                    <div className="flex min-h-0 min-w-0 flex-col border-t border-border pt-5 md:border-l md:border-t-0 md:pt-0 md:pl-7">
+                        <div className="shrink-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Chip size="sm" variant="soft">
+                                    {item.tag}
+                                </Chip>
+                                <span className="text-sm text-muted">{item.category}</span>
+                            </div>
+                            <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground">{item.title}</h2>
+                        </div>
+                        <div className="thin-scrollbar mt-5 min-h-0 flex-1 overflow-y-auto pr-2">
+                            <div className="rounded-xl border border-border bg-surface-secondary p-4">
+                                <div className="text-xs font-semibold uppercase tracking-wider text-muted">提示词</div>
+                                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">{item.prompt}</p>
+                            </div>
+                            <div className="mt-5">
+                                <div className="text-xs font-semibold uppercase tracking-wider text-muted">分类与标签</div>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    <Chip size="sm" variant="soft">
+                                        {item.category}
+                                    </Chip>
+                                    {item.tags.map((tag) => (
+                                        <Chip key={tag} size="sm" variant="soft">
+                                            {tag}
+                                        </Chip>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
+                            <HeroButton variant="primary" onPress={() => onApply(item)}>
+                                <Sparkles className="size-4" />
+                                使用提示词
+                            </HeroButton>
+                            <HeroButton variant="secondary" onPress={() => onUseReference(item)}>
+                                <PenLine className="size-4" />
+                                作为参考图
+                            </HeroButton>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+        </Modal>
     );
 }
 
@@ -576,328 +978,215 @@ function ResultImageCard({
     index,
     onEdit,
     onDownload,
-    onSaveAsset,
+    onSendCanvas,
 }: {
     image: GeneratedImage;
     index: number;
     onEdit: (image: GeneratedImage, index: number) => void;
     onDownload: (image: GeneratedImage, index: number) => void;
-    onSaveAsset: (image: GeneratedImage, index: number) => void;
+    onSendCanvas: (image: GeneratedImage) => void;
 }) {
     const { t } = useTranslation();
     return (
-        <div className="overflow-hidden rounded-lg border border-stone-200 bg-background dark:border-stone-800">
-            <Image src={image.dataUrl} alt={t("imageWorkbench.resultAlt", { count: index + 1 })} className="aspect-square object-cover" />
-            <div className="space-y-2 border-t border-stone-200 px-3 py-2.5 dark:border-stone-800">
-                <div className="flex min-w-0 gap-x-2 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-                    <span>
-                        {image.width}x{image.height}
+        <HeroCard variant="secondary" className="group overflow-hidden">
+            <AspectRatio ratio={image.width && image.height ? image.width / image.height : 1} className="overflow-hidden bg-black/40">
+                <Image src={image.dataUrl} alt={t("imageWorkbench.resultAlt", { count: index + 1 })} className="size-full object-cover" />
+            </AspectRatio>
+
+            <HeroCard.Content className="flex flex-col p-3">
+                <div className="flex items-center justify-between text-xs text-[var(--studio-muted)]">
+                    <span className="font-mono">
+                        {image.width} × {image.height}
                     </span>
                     <span>{formatBytes(image.bytes)}</span>
-                    <span>{formatDuration(image.durationMs)}</span>
                 </div>
-                <div className="grid min-w-0 grid-cols-3 gap-2">
-                    <Tooltip title={t("common.addToAssets")}>
-                        <Button className={RESULT_ACTION_BUTTON_CLASS} size="small" icon={<FolderPlus className="size-3.5" />} onClick={() => void onSaveAsset(image, index)}>
-                            {t("common.addToAssets")}
-                        </Button>
+
+                <div className="mt-3 grid grid-cols-3 gap-1.5">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <ShadcnButton variant="outline" size="sm" onClick={() => onSendCanvas(image)}>
+                                <Layers className="size-3.5" />
+                                <span>去画布</span>
+                            </ShadcnButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">导入画布作为节点进行编排</TooltipContent>
                     </Tooltip>
-                    <Tooltip title={t("imageWorkbench.addReference")}>
-                        <Button className={RESULT_ACTION_BUTTON_CLASS} size="small" icon={<PenLine className="size-3.5" />} onClick={() => void onEdit(image, index)}>
-                            {t("imageWorkbench.addReference")}
-                        </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <ShadcnButton variant="ghost" size="sm" onClick={() => onEdit(image, index)}>
+                                <PenLine className="size-3.5" />
+                                <span>改图</span>
+                            </ShadcnButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">作为参考图继续编辑</TooltipContent>
                     </Tooltip>
-                    <Tooltip title={t("common.download")}>
-                        <Button className={RESULT_ACTION_BUTTON_CLASS} size="small" icon={<Download className="size-3.5" />} onClick={() => onDownload(image, index)}>
-                            {t("common.download")}
-                        </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <ShadcnButton variant="ghost" size="sm" onClick={() => onDownload(image, index)}>
+                                <Download className="size-3.5" />
+                                <span>下载</span>
+                            </ShadcnButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">下载高清原图</TooltipContent>
                     </Tooltip>
                 </div>
-            </div>
-        </div>
+            </HeroCard.Content>
+        </HeroCard>
     );
 }
 
 function PendingImageCard() {
     const { t } = useTranslation();
     return (
-        <div className="relative aspect-square overflow-hidden rounded-lg border border-dashed border-stone-300 bg-stone-50 dark:border-stone-700 dark:bg-stone-900">
-            <div
-                className="absolute inset-0 opacity-60"
-                style={{
-                    backgroundImage: "radial-gradient(circle, rgba(120,113,108,0.35) 1.4px, transparent 1.6px)",
-                    backgroundSize: "16px 16px",
-                }}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-stone-500 dark:text-stone-400">
-                <LoaderCircle className="size-6 animate-spin" />
-                <span>{t("workbench.generating")}</span>
-            </div>
-        </div>
+        <HeroCard variant="secondary" className="flex aspect-square flex-col items-center justify-center border-2 border-dashed p-6 text-center">
+            <LoaderCircle className="mb-3 size-8 animate-spin text-[var(--studio-accent)]" />
+            <span className="text-sm font-semibold text-[var(--studio-text)]">{t("workbench.generating")}</span>
+            <span className="mt-1 text-xs text-[var(--studio-muted)]">正在进行高精度模型采样渲染...</span>
+        </HeroCard>
     );
 }
 
 function FailedImageCard({ error, onRetry }: { error: string; onRetry: () => void }) {
     const { t } = useTranslation();
     return (
-        <div className="overflow-hidden rounded-lg border border-red-200 bg-red-50 dark:border-red-950 dark:bg-red-950/20">
-            <div className="flex aspect-square flex-col items-center justify-center gap-3 p-5 text-center">
-                <div className="text-sm font-medium text-red-600 dark:text-red-300">{t("workbench.failed")}</div>
-                <Typography.Paragraph ellipsis={{ rows: 4 }} className="!mb-0 !text-xs !text-red-500 dark:!text-red-300">
-                    {error}
-                </Typography.Paragraph>
-            </div>
-            <div className="flex justify-end border-t border-red-200 p-3 dark:border-red-950">
-                <Button size="small" danger onClick={onRetry}>
-                    {t("workbench.retry")}
-                </Button>
-            </div>
-        </div>
+        <HeroCard variant="secondary" className="flex aspect-square flex-col items-center justify-center border-danger/30 bg-danger-soft p-6 text-center">
+            <span className="text-sm font-semibold text-danger">{t("workbench.failed")}</span>
+            <p className="mt-2 line-clamp-3 text-xs text-[var(--studio-muted)]">{error}</p>
+            <HeroButton variant="secondary" size="sm" onPress={onRetry} className="mt-4">
+                <RefreshCw className="size-3.5" />
+                {t("workbench.retry")}
+            </HeroButton>
+        </HeroCard>
     );
 }
 
 function updateResultAt(results: GenerationResult[], index: number, next: Partial<GenerationResult>) {
-    return results.map((item, itemIndex) => (itemIndex === index ? { ...item, ...next } : item));
+    return results.map((item, i) => (i === index ? { ...item, ...next } : item));
 }
 
-function LogPanel({
-    logs,
-    selectedLogIds,
-    activeLogId,
-    onSelectedLogIdsChange,
-    onCreateSession,
-    onDeleteSelected,
-    onPreviewLog,
-}: {
-    logs: GenerationLog[];
-    selectedLogIds: string[];
-    activeLogId?: string;
-    onSelectedLogIdsChange: (ids: string[]) => void;
-    onCreateSession: () => void;
-    onDeleteSelected: () => void;
-    onPreviewLog: (log: GenerationLog) => void;
-}) {
-    const { t } = useTranslation();
-    const allSelected = Boolean(logs.length) && selectedLogIds.length === logs.length;
-    const toggleAll = () => onSelectedLogIdsChange(allSelected ? [] : logs.map((log) => log.id));
+function moveListItem<T>(items: T[], index: number, offset: number) {
+    const target = index + offset;
+    if (target < 0 || target >= items.length) return items;
+    const next = [...items];
+    const [current] = next.splice(index, 1);
+    next.splice(target, 0, current);
+    return next;
+}
 
+function ReferenceOrderButtons({ index, total, onMove }: { index: number; total: number; onMove: (offset: number) => void }) {
     return (
-        <>
-            <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="absolute bottom-1 left-1 hidden items-center gap-1 group-hover:flex">
+            {index > 0 && (
+                <HeroButton isIconOnly variant="secondary" size="sm" onPress={() => onMove(-1)} aria-label="向前移动参考图片">
+                    <ChevronLeft className="size-3.5" />
+                </HeroButton>
+            )}
+            {index < total - 1 && (
+                <HeroButton isIconOnly variant="secondary" size="sm" onPress={() => onMove(1)} aria-label="向后移动参考图片">
+                    <ChevronRight className="size-3.5" />
+                </HeroButton>
+            )}
+        </div>
+    );
+}
+
+function CreationGallery({ logs, activeLogId, onCreateSession, onDelete, onPreviewLog }: { logs: GenerationLog[]; activeLogId?: string; onCreateSession: () => void; onDelete: (id: string) => void; onPreviewLog: (log: GenerationLog) => void }) {
+    return (
+        <div className="flex min-h-[min(70dvh,680px)] flex-col">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-4">
                 <div>
-                    <h2 className="text-base font-semibold">{t("workbench.logs")}</h2>
+                    <p className="studio-field-label">图像生成</p>
+                    <p className="mt-1 text-sm text-[var(--studio-muted)]">共 {logs.length} 项创作</p>
                 </div>
-                <Tag className="m-0">{logs.length}</Tag>
+                <HeroButton variant="secondary" size="sm" onPress={onCreateSession}>
+                    <Sparkles className="size-3.5" />
+                    新建创作
+                </HeroButton>
             </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-                <Button size="small" icon={<Plus className="size-3.5" />} onClick={onCreateSession}>
-                    {t("workbench.new")}
-                </Button>
-                <Button size="small" icon={<CheckSquare className="size-3.5" />} disabled={!logs.length} onClick={toggleAll}>
-                    {allSelected ? t("common.cancel") : t("workbench.selectAll")}
-                </Button>
-                <Button size="small" danger icon={<Trash2 className="size-3.5" />} disabled={!selectedLogIds.length} onClick={onDeleteSelected}>
-                    {t("common.delete")}
-                </Button>
-            </div>
-            <div className="space-y-3">
-                {logs.map((log) => (
-                    <LogCard
-                        key={log.id}
-                        log={log}
-                        selected={selectedLogIds.includes(log.id)}
-                        active={activeLogId === log.id}
-                        onSelectedChange={(checked) => onSelectedLogIdsChange(checked ? [...selectedLogIds, log.id] : selectedLogIds.filter((id) => id !== log.id))}
-                        onClick={() => onPreviewLog(log)}
-                    />
-                ))}
-                {!logs.length ? <div className="flex min-h-48 items-center justify-center rounded-lg border border-dashed border-stone-300 text-center text-sm text-stone-500 dark:border-stone-700">{t("workbench.noLogs")}</div> : null}
-            </div>
-        </>
-    );
-}
 
-function LogCard({ log, selected, active, onSelectedChange, onClick }: { log: GenerationLog; selected: boolean; active: boolean; onSelectedChange: (checked: boolean) => void; onClick: () => void }) {
-    const { t } = useTranslation();
-    const thumbnails = (log.thumbnails || []).filter(Boolean).slice(0, 4);
-
-    return (
-        <button
-            type="button"
-            className={`block w-full rounded-lg border p-2 text-left transition ${active ? "border-stone-900 bg-blue-50 dark:border-stone-100 dark:bg-blue-950/20" : "border-stone-200 bg-background hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-900"}`}
-            onClick={onClick}
-        >
-            <div className="grid grid-cols-[minmax(128px,1fr)_auto] gap-2">
-                <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-2">
-                    <Checkbox className="mt-0.5" checked={selected} onClick={(event) => event.stopPropagation()} onChange={(event) => onSelectedChange(event.target.checked)} />
-                    <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold leading-5">{log.title}</div>
-                        {thumbnails.length ? (
-                            <div className="mt-2 flex gap-1 overflow-hidden">
-                                {thumbnails.map((image, index) => (
-                                    <img key={`${log.id}-${index}`} src={image} alt="" className="size-8 shrink-0 rounded-md object-cover" />
-                                ))}
+            {logs.length ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    {logs.map((log) => {
+                        const cover = log.thumbnails[0] || log.images[0]?.dataUrl;
+                        const active = log.id === activeLogId;
+                        return (
+                            <div key={log.id} className="group relative min-w-0">
+                                <HeroButton
+                                    variant="tertiary"
+                                    fullWidth
+                                    className={`h-auto min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-xl border p-0 text-left ${active ? "!border-[var(--studio-accent)] !bg-[var(--studio-accent-soft)]" : "border-[var(--studio-border)]"}`}
+                                    onPress={() => onPreviewLog(log)}
+                                >
+                                    <AspectRatio ratio={1} className="overflow-hidden bg-[var(--studio-raised)]">
+                                        {cover ? (
+                                            <img src={cover} alt={log.title || "生成图片"} className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.03] motion-reduce:transition-none" />
+                                        ) : (
+                                            <span className="grid size-full place-items-center text-[var(--studio-muted)]">
+                                                <ImagePlus className="size-6" />
+                                            </span>
+                                        )}
+                                    </AspectRatio>
+                                    <span className="flex min-w-0 flex-col gap-1 p-3">
+                                        <span className="line-clamp-1 text-sm font-medium text-[var(--studio-text)]">{log.title || "未命名创作"}</span>
+                                        <span className="flex items-center justify-between gap-2 text-xs text-[var(--studio-muted)]">
+                                            <span className="truncate">{log.time}</span>
+                                            <span className="shrink-0">{log.imageCount} 张</span>
+                                        </span>
+                                    </span>
+                                </HeroButton>
+                                <HeroButton
+                                    isIconOnly
+                                    variant="tertiary"
+                                    size="sm"
+                                    className="absolute right-2 top-2 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+                                    aria-label="删除创作记录"
+                                    onPress={() => onDelete(log.id)}
+                                >
+                                    <Trash2 className="size-3.5" />
+                                </HeroButton>
                             </div>
-                        ) : null}
-                    </div>
+                        );
+                    })}
                 </div>
-                <div className="grid justify-items-end gap-2">
-                    <div className="flex gap-1">
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none" color="blue">
-                            {t("workbench.successCount", { count: log.successCount ?? log.imageCount })}
-                        </Tag>
-                        {log.failCount ? (
-                            <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none" color="red">
-                                {t("workbench.failCount", { count: log.failCount })}
-                            </Tag>
-                        ) : null}
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-1">
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{t("workbench.itemCount", { count: log.imageCount })}</Tag>
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none" color="green">
-                            {formatDuration(log.durationMs)}
-                        </Tag>
-                    </div>
-                    <div className="flex justify-end">
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{log.time}</Tag>
-                    </div>
-                </div>
-            </div>
-        </button>
+            ) : (
+                <StudioEmptyState title="还没有创作" icon={ImagePlus} className="min-h-[360px] flex-1">
+                    <span>完成一次生成后，作品会保存在这里。</span>
+                </StudioEmptyState>
+            )}
+        </div>
     );
 }
 
-async function readStoredLogs() {
+function serializeLog(log: GenerationLog): GenerationLog {
+    return {
+        ...log,
+        thumbnails: log.images.slice(0, 4).map((i) => i.dataUrl),
+    };
+}
+
+function buildLog(data: Omit<GenerationLog, "id" | "createdAt" | "time" | "imageCount" | "size" | "quality" | "title" | "thumbnails">): GenerationLog {
+    return {
+        ...data,
+        id: nanoid(),
+        createdAt: Date.now(),
+        time: new Date().toLocaleTimeString(),
+        title: data.prompt.slice(0, 30),
+        imageCount: data.images.length,
+        size: data.config.size || "1024x1024",
+        quality: data.config.quality || "standard",
+        thumbnails: data.images.slice(0, 4).map((i) => i.dataUrl),
+    };
+}
+
+async function readStoredLogs(): Promise<GenerationLog[]> {
     if (typeof window === "undefined") return [];
     try {
         const values: GenerationLog[] = [];
         await logStore.iterate<GenerationLog, void>((value) => {
             values.push(value);
         });
-        const logs = await Promise.all(values.map(normalizeLog));
-        return logs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        return values.sort((a, b) => b.createdAt - a.createdAt);
     } catch {
         return [];
     }
-}
-
-async function normalizeLog(log: Partial<GenerationLog>): Promise<GenerationLog> {
-    const references = await Promise.all(
-        (log.references || []).map(async (item) => ({
-            ...item,
-            dataUrl: await resolveImageUrl(item.storageKey, item.dataUrl),
-        })),
-    );
-    const images = await Promise.all(
-        (log.images || []).map(async (item) => ({
-            ...item,
-            dataUrl: await resolveImageUrl(item.storageKey, item.dataUrl),
-        })),
-    );
-    const config = normalizeLogConfig(log);
-    return {
-        id: log.id || nanoid(),
-        createdAt: log.createdAt || Date.now(),
-        title: log.title || log.model || i18n.t("workbench.untitled"),
-        prompt: log.prompt || log.title || "",
-        time: log.time || new Date().toLocaleString(i18n.resolvedLanguage, { hour12: false }),
-        model: log.model || config.imageModel || "",
-        config,
-        references,
-        durationMs: log.durationMs || 0,
-        successCount: log.successCount ?? log.imageCount ?? 0,
-        failCount: log.failCount || 0,
-        imageCount: log.imageCount || log.successCount || 0,
-        size: log.size || config.size || "",
-        quality: log.quality || config.quality || "",
-        status: log.status || "success",
-        images,
-        thumbnails: images.map((image) => image.dataUrl).filter(Boolean),
-    };
-}
-
-function serializeLog(log: GenerationLog): GenerationLog {
-    return {
-        ...log,
-        references: log.references.map((item) => ({ ...item, dataUrl: item.storageKey ? "" : item.dataUrl })),
-        images: log.images.map((image) => ({ ...image, dataUrl: image.storageKey ? "" : image.dataUrl })),
-        thumbnails: [],
-    };
-}
-
-function normalizeLogConfig(log: Partial<GenerationLog>): GenerationLogConfig {
-    return {
-        model: log.config?.model || log.model || "",
-        imageModel: log.config?.imageModel || log.model || "",
-        quality: log.config?.quality || log.quality || "",
-        size: log.config?.size || log.size || "",
-        count: log.config?.count || String(log.imageCount || log.successCount || 1),
-    };
-}
-
-function moveListItem<T>(items: T[], index: number, offset: number) {
-    const targetIndex = index + offset;
-    if (targetIndex < 0 || targetIndex >= items.length) return items;
-    const next = [...items];
-    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
-    return next;
-}
-
-function ReferenceOrderButtons({ index, total, onMove }: { index: number; total: number; onMove: (offset: number) => void }) {
-    if (total <= 1) return null;
-    return (
-        <div className="absolute inset-x-1 bottom-1 flex justify-between">
-            <Button size="small" className="!h-6 !w-6 !min-w-6 !rounded-full !bg-white/85 !p-0 !shadow-sm" icon={<ArrowLeft className="size-3" />} disabled={index <= 0} onClick={() => onMove(-1)} />
-            <Button size="small" className="!h-6 !w-6 !min-w-6 !rounded-full !bg-white/85 !p-0 !shadow-sm" icon={<ArrowRight className="size-3" />} disabled={index >= total - 1} onClick={() => onMove(1)} />
-        </div>
-    );
-}
-
-function buildLog({
-    prompt,
-    model,
-    config,
-    references,
-    durationMs,
-    successCount,
-    failCount,
-    status,
-    images,
-}: {
-    prompt: string;
-    model: string;
-    config: GenerationLogConfig;
-    references: ReferenceImage[];
-    durationMs: number;
-    successCount: number;
-    failCount: number;
-    status: GenerationLog["status"];
-    images: GeneratedImage[];
-}): GenerationLog {
-    const logConfig = {
-        model: config.model,
-        imageModel: config.imageModel,
-        quality: config.quality,
-        size: config.size,
-        count: config.count,
-    };
-    return {
-        id: nanoid(),
-        createdAt: Date.now(),
-        title: prompt.slice(0, 12) || i18n.t("workbench.untitled"),
-        prompt,
-        time: new Date().toLocaleString(i18n.resolvedLanguage, { hour12: false }),
-        model,
-        config: logConfig,
-        references,
-        durationMs,
-        successCount,
-        failCount,
-        imageCount: Number(logConfig.count) || successCount,
-        size: logConfig.size,
-        quality: logConfig.quality,
-        status,
-        images,
-        thumbnails: images.map((image) => image.dataUrl).filter(Boolean),
-    };
 }

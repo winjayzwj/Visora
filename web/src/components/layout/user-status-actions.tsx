@@ -1,10 +1,11 @@
 import type { CSSProperties } from "react";
-import { Tooltip } from "antd";
+import { Tooltip } from "@heroui/react";
 import { BookOpen, Keyboard, Puzzle, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { GitHubLink } from "@/components/layout/github-link";
+import { PlatformAccount } from "@/components/layout/platform-account";
 import { VersionReleaseModal } from "@/components/layout/version-release-modal";
 import { DOCS_URL } from "@/constant/env";
 import { changeAppLocale, type AppLocale } from "@/i18n";
@@ -15,12 +16,13 @@ import { useThemeStore } from "@/stores/use-theme-store";
 
 type UserStatusActionsProps = {
     showConfig?: boolean;
+    showTheme?: boolean;
     variant?: "default" | "canvas";
     onOpenShortcuts?: () => void;
     onOpenPlugins?: () => void;
 };
 
-export function UserStatusActions({ showConfig = true, variant = "default", onOpenShortcuts, onOpenPlugins }: UserStatusActionsProps) {
+export function UserStatusActions({ showConfig = true, showTheme = true, variant = "default", onOpenShortcuts, onOpenPlugins }: UserStatusActionsProps) {
     const { i18n, t } = useTranslation();
     const theme = useThemeStore((state) => state.theme);
     const setTheme = useThemeStore((state) => state.setTheme);
@@ -42,20 +44,26 @@ export function UserStatusActions({ showConfig = true, variant = "default", onOp
                     <Puzzle className="size-4" />
                 </button>
             ) : null}
-            <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className={naturalIconClass} style={iconStyle} aria-label={t("topNav.docs")} title={t("topNav.docs")}>
-                <BookOpen className="size-4" />
-            </a>
+            <PlatformAccount variant={variant} />
+            {DOCS_URL ? (
+                <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className={naturalIconClass} style={iconStyle} aria-label={t("topNav.docs")} title={t("topNav.docs")}>
+                    <BookOpen className="size-4" />
+                </a>
+            ) : null}
             {showConfig ? (
                 <button type="button" className={naturalIconClass} style={iconStyle} onClick={() => openConfigDialog(false)} aria-label={t("navigation.config")} title={t("navigation.config")}>
                     <Settings2 className="size-4" />
                 </button>
             ) : null}
-            <Tooltip title={languageLabel} mouseEnterDelay={0.2}>
-                <button type="button" className={`${naturalIconClass} text-[11px] font-semibold tracking-tight`} style={iconStyle} onClick={() => void changeAppLocale(nextLocale)} aria-label={languageLabel}>
-                    {locale === "zh-CN" ? "中" : "EN"}
-                </button>
+            <Tooltip delay={200}>
+                <Tooltip.Trigger>
+                    <button type="button" className={`${naturalIconClass} text-[11px] font-semibold tracking-tight`} style={iconStyle} onClick={() => void changeAppLocale(nextLocale)} aria-label={languageLabel}>
+                        {locale === "zh-CN" ? "中" : "EN"}
+                    </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content placement="bottom">{languageLabel}</Tooltip.Content>
             </Tooltip>
-            <AnimatedThemeToggler theme={theme} onThemeChange={setTheme} className={naturalIconClass} style={iconStyle} aria-label={t(theme === "dark" ? "topNav.lightTheme" : "topNav.darkTheme")} title={t(theme === "dark" ? "topNav.lightTheme" : "topNav.darkTheme")} />
+            {showTheme ? <AnimatedThemeToggler theme={theme} onThemeChange={setTheme} className={naturalIconClass} style={iconStyle} aria-label={t(theme === "dark" ? "topNav.lightTheme" : "topNav.darkTheme")} title={t(theme === "dark" ? "topNav.lightTheme" : "topNav.darkTheme")} /> : null}
             <VersionReleaseModal style={versionStyle} />
             <GitHubLink className={cn("bg-transparent hover:bg-transparent dark:hover:bg-transparent", gitHubClassName)} style={gitHubStyle} />
             {onOpenShortcuts ? (

@@ -2,12 +2,15 @@
 out/
 node_modules/
 .env*
+!/plugins/visora/.mcp.json
 !.env.example
 data/
 *.log
 *.tsbuildinfo
 .DS_Store
 .idea
+.workbuddy/
+.workbuddy-ai/
 web/dist
 
 **/dist

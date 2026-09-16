@@ -1,23 +1,23 @@
-# @basketikun/canvas-proxy
+# @visora-ai/canvas-proxy
 
-Infinite Canvas 的本地转发代理。浏览器直连第三方 AI 接口时经常被 CORS 拦截，启动它之后，网页会把请求先发到本机，再由本机转发到目标地址。
+Visora AI 的本地转发代理。浏览器直连第三方 AI 接口时经常被 CORS 拦截，启动它之后，网页会把请求先发到本机，再由本机转发到目标地址。
 
 代理只做转发：不改写请求体，不校验 API Key，不落盘任何日志。
 
 ## 使用
 
 ```bash
-npx @basketikun/canvas-proxy@latest
+node /Users/winjay/home/www/Visora/canvas-proxy/index.js
 ```
 
-默认监听 `http://127.0.0.1:23210`。把这个地址填进 Infinite Canvas 的「配置 → 本地代理」，并打开开关即可。
+默认监听 `http://127.0.0.1:23210`。把这个地址填进映序（Visora AI）的「配置 → 本地代理」，并打开开关即可。
 
-带上 `@latest` 是因为 npx 会缓存已下载的版本，不加就可能一直运行旧版本。
+当前直接运行本地源码，无需下载 Visora npm 包。项目移动后请同步调整上述路径。
 
 可选参数：
 
 ```bash
-npx @basketikun/canvas-proxy@latest --port 23210 --host 127.0.0.1
+node /Users/winjay/home/www/Visora/canvas-proxy/index.js --port 23210 --host 127.0.0.1
 ```
 
 也支持 `PORT` / `HOST` 环境变量。

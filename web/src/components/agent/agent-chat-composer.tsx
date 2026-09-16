@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
-import { Button, Dropdown, Tooltip } from "antd";
+import { Button, Dropdown, Tooltip } from "@/components/ui/heroui-compat";
 import { ArrowUp, Check, ChevronUp, Cpu, Gauge, Hand, ImagePlus, LoaderCircle, RefreshCw, ShieldAlert, ShieldCheck, ShieldOff, Square, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

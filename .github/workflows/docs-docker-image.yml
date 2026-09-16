@@ -1,4 +1,4 @@
-name: Docs Docker image
+name: Visora Docs Docker image
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE_NAME: ghcr.io/basketikun/infinite-canvas-docs
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/visora-docs
 
 jobs:
   meta:
@@ -72,7 +72,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: docs-digests-${{ matrix.arch }}
+          name: visora-docs-digests-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
-          pattern: docs-digests-*
+          pattern: visora-docs-digests-*
           merge-multiple: true
 
       - name: Create multi-arch manifest

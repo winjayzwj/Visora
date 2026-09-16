@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/dist
+**/.next
+**/.env*
+**/*.log
+docs
+data
+.agents
+.codex
+canvas-agent
+canvas-proxy
+plugins
+task_plan.md
+findings.md
+progress.md

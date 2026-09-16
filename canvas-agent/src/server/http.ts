@@ -14,7 +14,7 @@ import { logger } from "../utils/logger.js";
 import { checkVersions } from "../version-check.js";
 import { SkillStore, SkillStoreError } from "../skills/store.js";
 
-/** 启动仅监听本机的 Canvas Agent HTTP 服务。 */
+/** 启动仅监听本机的 Visora AI Agent HTTP 服务。 */
 export function startHttpServer() {
     const config = loadConfig(true);
     const port = Number(process.env.PORT) || Number(new URL(config.url).port) || DEFAULT_PORT;
@@ -432,15 +432,15 @@ export function startHttpServer() {
     });
 
     app.listen(port, "127.0.0.1", () => {
-        console.log("Infinite Canvas Agent");
+        console.log("Visora AI Agent");
         checkVersions();
         console.log(`Local URL: ${config.url}`);
         console.log(`Connect token: ${config.token}`);
         console.log("Codex MCP is not installed by this command.");
-        console.log("Optional MCP add: codex mcp add infinite-canvas -- npx -y @basketikun/canvas-agent@latest mcp");
-        console.log("Remove manually added MCP: codex mcp remove infinite-canvas");
+        console.log("Optional MCP add: codex mcp add visora -- node /Users/winjay/home/www/Visora/canvas-agent/dist/index.js mcp");
+        console.log("Remove manually added MCP: codex mcp remove visora");
         if (logger.enabled) console.log(`Debug log: ${logger.filePath}`);
-        logger.info("Canvas Agent started", { url: config.url, workspace: ensureSiteWorkspace(config).workspacePath, debugLog: logger.filePath });
+        logger.info("Visora AI Agent started", { url: config.url, workspace: ensureSiteWorkspace(config).workspacePath, debugLog: logger.filePath });
         const activeThreadId = initialWorkspace.activeThreadId || "";
         if (activeThreadId && session.beginCodexMutation()) {
             void prepareExistingThread(activeThreadId).catch(async (error) => {
@@ -521,7 +521,7 @@ function requestUrl(req: Request, config: CanvasAgentConfig) {
 function setCors(req: Request, res: Response, url: URL, config: CanvasAgentConfig) {
     const origin = req.headers.origin;
     res.setHeader("Access-Control-Allow-Origin", origin || "*");
-    res.setHeader("Access-Control-Allow-Headers", "content-type,x-canvas-agent-token");
+    res.setHeader("Access-Control-Allow-Headers", "content-type,x-visora-agent-token");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Private-Network", "true");
     if (!origin || req.method === "OPTIONS" || url.pathname === "/health" || url.pathname === "/config") return true;
@@ -536,7 +536,7 @@ function setCors(req: Request, res: Response, url: URL, config: CanvasAgentConfi
 
 /** 校验请求查询参数或请求头中的连接 token。 */
 function validToken(req: Request, url: URL, token: string) {
-    const header = req.headers["x-canvas-agent-token"];
+    const header = req.headers["x-visora-agent-token"];
     return url.searchParams.get("token") === token || header === token || (Array.isArray(header) && header.includes(token));
 }
 

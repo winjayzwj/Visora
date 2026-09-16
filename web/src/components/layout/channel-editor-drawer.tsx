@@ -1,4 +1,4 @@
-import { Button, Drawer, Input, Segmented, Select, Space } from "antd";
+import { Button, Drawer, Input, Segmented, Select, Space } from "@/components/ui/heroui-compat";
 import { ListPlus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

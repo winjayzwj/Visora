@@ -1,6 +1,6 @@
 services:
   docs:
-    image: ghcr.io/basketikun/infinite-canvas-docs:latest
+    image: ${VISORA_DOCS_IMAGE:-visora-docs:latest}
     ports:
       - "3001:3000"
     restart: unless-stopped

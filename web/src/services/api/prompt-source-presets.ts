@@ -9,9 +9,6 @@ export type PromptSource = {
     builtIn: boolean;
 };
 
-export const PROMPT_REGISTRY_HOMEPAGE = "https://github.com/yukkcat/image-prompts";
-const PROMPT_REGISTRY_SOURCE_BASE = "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources";
-
 export function createPromptSource(source?: Partial<PromptSource>): PromptSource {
     return {
         id: source?.id?.trim() || nanoid(),
@@ -23,16 +20,63 @@ export function createPromptSource(source?: Partial<PromptSource>): PromptSource
     };
 }
 
+// These sources are the prompt library's catalogue, not product branding. Keeping
+// their IDs stable also lets an existing browser cache survive product upgrades.
 export const DEFAULT_PROMPT_SOURCES: PromptSource[] = [
-    registrySource("banana-prompt-quicker", "Banana Prompt Quicker", "https://glidea.github.io/banana-prompt-quicker/"),
-    registrySource("davidwu-gpt-image2-prompts", "DavidWu GPT Image 2", "https://github.com/davidwuw0811-boop/awesome-gpt-image2-prompts"),
-    registrySource("freestylefly-gpt-image-2", "Freestylefly GPT Image 2", "https://github.com/freestylefly/awesome-gpt-image-2"),
-    registrySource("awesome-gpt-image", "Awesome GPT Image", "https://github.com/ZeroLu/awesome-gpt-image"),
-    registrySource("awesome-gpt4o-image-prompts", "Awesome GPT-4o", "https://github.com/ImgEdify/Awesome-GPT4o-Image-Prompts"),
-    registrySource("youmind-gpt-image-2", "YouMind GPT Image 2", "https://github.com/YouMind-OpenLab/awesome-gpt-image-2"),
-    registrySource("youmind-nano-banana-pro", "YouMind Nano Banana Pro", "https://github.com/YouMind-OpenLab/awesome-nano-banana-pro-prompts"),
+    {
+        id: "banana-prompt-quicker",
+        name: "Banana Prompt Quicker",
+        url: "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources/banana-prompt-quicker.json",
+        homepage: "https://glidea.github.io/banana-prompt-quicker/",
+        enabled: true,
+        builtIn: true,
+    },
+    {
+        id: "davidwu-gpt-image2-prompts",
+        name: "DavidWu GPT Image 2",
+        url: "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources/davidwu-gpt-image2-prompts.json",
+        homepage: "https://github.com/davidwuw0811-boop/awesome-gpt-image2-prompts",
+        enabled: true,
+        builtIn: true,
+    },
+    {
+        id: "freestylefly-gpt-image-2",
+        name: "Freestylefly GPT Image 2",
+        url: "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources/freestylefly-gpt-image-2.json",
+        homepage: "https://github.com/freestylefly/awesome-gpt-image-2",
+        enabled: true,
+        builtIn: true,
+    },
+    {
+        id: "awesome-gpt-image",
+        name: "Awesome GPT Image",
+        url: "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources/awesome-gpt-image.json",
+        homepage: "https://github.com/ZeroLu/awesome-gpt-image",
+        enabled: true,
+        builtIn: true,
+    },
+    {
+        id: "awesome-gpt4o-image-prompts",
+        name: "Awesome GPT-4o",
+        url: "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources/awesome-gpt4o-image-prompts.json",
+        homepage: "https://github.com/ImgEdify/Awesome-GPT4o-Image-Prompts",
+        enabled: true,
+        builtIn: true,
+    },
+    {
+        id: "youmind-gpt-image-2",
+        name: "YouMind GPT Image 2",
+        url: "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources/youmind-gpt-image-2.json",
+        homepage: "https://github.com/YouMind-OpenLab/awesome-gpt-image-2",
+        enabled: true,
+        builtIn: true,
+    },
+    {
+        id: "youmind-nano-banana-pro",
+        name: "YouMind Nano Banana Pro",
+        url: "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources/youmind-nano-banana-pro.json",
+        homepage: "https://github.com/YouMind-OpenLab/awesome-nano-banana-pro-prompts",
+        enabled: true,
+        builtIn: true,
+    },
 ];
-
-function registrySource(id: string, name: string, homepage: string): PromptSource {
-    return { id, name, url: `${PROMPT_REGISTRY_SOURCE_BASE}/${id}.json`, homepage, enabled: true, builtIn: true };
-}

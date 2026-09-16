@@ -1,4 +1,4 @@
-import { Button, Modal } from "antd";
+import { Button, Modal } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
 
 import { useAssetStore } from "@/stores/use-asset-store";

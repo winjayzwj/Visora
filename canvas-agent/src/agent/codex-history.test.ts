@@ -124,7 +124,7 @@ test("Codex 历史省略命令时使用补充事件恢复完整命令卡片", ()
         threadId: "thread-1",
         turnId: "turn-1",
         itemId: "command-1",
-        item: { id: "command-1", type: "command_execution", command: "Get-Location", status: "completed", exitCode: 0, aggregatedOutput: "D:\\infinite-canvas" },
+        item: { id: "command-1", type: "command_execution", command: "Get-Location", status: "completed", exitCode: 0, aggregatedOutput: "D:\\visora" },
     }], turns: [] });
 
     const command = messages.find((item) => item.itemId === "command-1");
@@ -133,7 +133,7 @@ test("Codex 历史省略命令时使用补充事件恢复完整命令卡片", ()
         kind: "command",
         status: "completed",
         rows: [{ label: "退出状态", value: "0" }],
-        output: "D:\\infinite-canvas",
+        output: "D:\\visora",
     });
 });
 
@@ -188,12 +188,12 @@ test("标准历史正文损坏且重写 item id 时不会重复显示同一条�
 });
 
 test("标准历史同时保留损坏临时条目和稳定条目时移除损坏副本", () => {
-    const cleanText = "目前能排除“网页没开”和“Canvas Agent 没连”：前端和 Agent 均正常。";
+    const cleanText = "目前能排除“网页没开”和“Visora AI Agent 没连”：前端和 Agent 均正常。";
     const messages = threadMessages({
         id: "thread-1",
         turns: [{ id: "turn-1", status: "completed", items: [
             { id: "user-1", type: "userMessage", content: [{ type: "text", text: "检查连接" }] },
-            { id: "item-38", type: "agentMessage", text: "目前能排除“网页没开”和“Canvas Agent 没连��：前端和 Agent 均正常。" },
+            { id: "item-38", type: "agentMessage", text: "目前能排除“网页没开”和“Visora AI Agent 没连��：前端和 Agent 均正常。" },
             { id: "command-1", type: "commandExecution", command: "Get-NetTCPConnection", status: "completed" },
             { id: "msg-stable", type: "agentMessage", text: cleanText },
         ] }],
@@ -217,7 +217,7 @@ test("标准历史条目稀疏时按字段补全补充事件", () => {
         turnId: "turn-1",
         itemId: "command-1",
         sequence: 1,
-        item: { id: "command-1", type: "command_execution", command: "补充命令", cwd: "D:\\infinite-canvas", aggregatedOutput: "输出", exitCode: 0 },
+        item: { id: "command-1", type: "command_execution", command: "补充命令", cwd: "D:\\visora", aggregatedOutput: "输出", exitCode: 0 },
     }], turns: [] });
 
     const command = messages.find((item) => item.itemId === "command-1");
@@ -225,7 +225,7 @@ test("标准历史条目稀疏时按字段补全补充事件", () => {
     assert.deepEqual(command?.detail, {
         kind: "command",
         status: "completed",
-        rows: [{ label: "工作目录", value: "D:\\infinite-canvas" }, { label: "退出状态", value: "0" }],
+        rows: [{ label: "工作目录", value: "D:\\visora" }, { label: "退出状态", value: "0" }],
         output: "输出",
     });
 });
@@ -268,7 +268,7 @@ test("补充事件按 item 开始顺序插入标准历史锚点之间", () => {
 });
 
 test("补充事件写入本地 JSON 后可在 Agent 重启后恢复", async (context) => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "canvas-agent-history-"));
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "visora-agent-history-"));
     context.after(() => fs.rm(directory, { recursive: true, force: true }));
     const file = path.join(directory, "codex-event-history.json");
     const entry = {
@@ -284,7 +284,7 @@ test("补充事件写入本地 JSON 后可在 Agent 重启后恢复", async (con
 });
 
 test("补充历史 JSON 损坏后会从空历史恢复并允许重新写入", async (context) => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "canvas-agent-history-"));
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "visora-agent-history-"));
     context.after(() => fs.rm(directory, { recursive: true, force: true }));
     const file = path.join(directory, "codex-event-history.json");
     await fs.writeFile(file, "{\"version\":1,\"items\":[");
@@ -300,11 +300,11 @@ test("补充历史 JSON 损坏后会从空历史恢复并允许重新写入", as
 });
 
 test("标准历史尚未物化 turn 时从本地终态事件恢复完整对话", async (context) => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "canvas-agent-history-"));
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "visora-agent-history-"));
     context.after(() => fs.rm(directory, { recursive: true, force: true }));
     const file = path.join(directory, "codex-event-history.json");
     const history = new CodexEventHistory(file);
-    await history.record({ threadId: "thread-1", turnId: "turn-1", itemId: "command-1", sequence: 1, item: { id: "command-1", type: "command_execution", command: "Get-Location", status: "completed", exitCode: 0, aggregatedOutput: "D:\\infinite-canvas" } });
+    await history.record({ threadId: "thread-1", turnId: "turn-1", itemId: "command-1", sequence: 1, item: { id: "command-1", type: "command_execution", command: "Get-Location", status: "completed", exitCode: 0, aggregatedOutput: "D:\\visora" } });
     await history.record({ threadId: "thread-1", turnId: "turn-1", itemId: "assistant-1", sequence: 2, item: { id: "assistant-1", type: "agent_message", text: "完成" } });
     await history.recordTurn({ threadId: "thread-1", turnId: "turn-1", turn: { id: "turn-1", status: "completed", input: "执行 Get-Location" } });
 
@@ -320,7 +320,7 @@ test("标准历史尚未物化 turn 时从本地终态事件恢复完整对话",
 });
 
 test("归档线程只清除该线程的补充事件", async (context) => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "canvas-agent-history-"));
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "visora-agent-history-"));
     context.after(() => fs.rm(directory, { recursive: true, force: true }));
     const history = new CodexEventHistory(path.join(directory, "codex-event-history.json"));
     const entry = (threadId: string) => ({ threadId, turnId: "turn-1", itemId: "command-1", item: { id: "command-1", type: "command_execution" } });
@@ -334,21 +334,21 @@ test("归档线程只清除该线程的补充事件", async (context) => {
 });
 
 test("补充事件更新时保留已有字段并限制单项输出大小", async (context) => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "canvas-agent-history-"));
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "visora-agent-history-"));
     context.after(() => fs.rm(directory, { recursive: true, force: true }));
     const history = new CodexEventHistory(path.join(directory, "codex-event-history.json"));
-    await history.record({ threadId: "thread-1", turnId: "turn-1", itemId: "command-1", sequence: 1, item: { id: "command-1", type: "command_execution", command: "Get-Location", cwd: "D:\\infinite-canvas" } });
+    await history.record({ threadId: "thread-1", turnId: "turn-1", itemId: "command-1", sequence: 1, item: { id: "command-1", type: "command_execution", command: "Get-Location", cwd: "D:\\visora" } });
     await history.record({ threadId: "thread-1", turnId: "turn-1", itemId: "command-1", item: { id: "command-1", status: "completed", aggregatedOutput: "x".repeat(100_001) } });
 
     const [entry] = (await history.readThread("thread-1")).items;
     assert.equal(entry.sequence, 1);
     assert.equal(entry.item.command, "Get-Location");
-    assert.equal(entry.item.cwd, "D:\\infinite-canvas");
+    assert.equal(entry.item.cwd, "D:\\visora");
     assert.equal(String(entry.item.aggregatedOutput).endsWith("[输出已截断]"), true);
 });
 
 test("补充事件落盘失败时不污染内存读取", async (context) => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "canvas-agent-history-"));
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "visora-agent-history-"));
     context.after(() => fs.rm(directory, { recursive: true, force: true }));
     const file = path.join(directory, "history-target");
     const history = new CodexEventHistory(file);

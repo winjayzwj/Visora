@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>映序 Visora AI · 登录创作台 (MiMo 科技感预览)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"Fira Code"', 'Consolas', 'Monaco', 'monospace'],
+          },
+          colors: {
+            cyber: {
+              bg: '#07090e',
+              panel: '#0c1017',
+              cyan: '#00f5d4',
+              neon: '#06b6d4',
+              indigo: '#4f46e5',
+              emerald: '#10b981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #07090e;
+      color: #f1fcfa;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+    .mono {
+      font-family: 'Fira Code', monospace;
+    }
+    .mimo-glow-cyan {
+      box-shadow: 0 0 35px -5px rgba(6, 182, 212, 0.25);
+    }
+    .mimo-glow-btn {
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    .mimo-glow-btn:hover {
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    .glass-card {
+      background: rgba(12, 16, 23, 0.78);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+    .glass-card-subtle {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .glass-card-subtle:hover {
+      background: rgba(6, 182, 212, 0.05);
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 4s ease-in-out infinite;
+    }
+    @keyframes scan-line {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(1000%); }
+    }
+    .scan-beam {
+      animation: scan-line 8s linear infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- 全局网格与高维光晕底纹 -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-cyan-500/15 blur-[140px]"></div>
+    <div class="absolute top-1/4 -right-32 w-[550px] h-[550px] rounded-full bg-indigo-600/15 blur-[150px]"></div>
+    <div class="absolute -bottom-32 left-1/3 w-[650px] h-[650px] rounded-full bg-emerald-500/10 blur-[160px]"></div>
+
+    <!-- 极客坐标点阵网格 -->
+    <svg class="absolute inset-0 w-full h-full opacity-35" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+          <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1" />
+          <circle cx="0" cy="0" r="1" fill="rgba(138, 240, 219, 0.3)" />
+          <path d="M 24 22 L 24 26 M 22 24 L 26 24" stroke="rgba(255, 255, 255, 0.06)" stroke-width="0.75" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg>
+
+    <!-- 纵向激光轴线 -->
+    <div class="absolute top-0 bottom-0 left-12 w-px bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent"></div>
+    <div class="absolute top-0 bottom-0 right-12 w-px bg-gradient-to-b from-transparent via-indigo-500/20 to-transparent"></div>
+  </div>
+
+  <!-- 主工作台容器 -->
+  <main class="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_490px] xl:grid-cols-[minmax(0,1.25fr)_540px]">
+
+    <!-- 左侧：MiMo 科技感展厅 (Brand Panel) -->
+    <aside class="relative hidden lg:flex flex-col justify-between p-10 xl:p-14 border-r border-white/[0.08] overflow-hidden">
+
+      <!-- 头部：品牌与实时 HUD 指示 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3.5">
+          <div class="relative flex items-center justify-center w-11 h-11 rounded-xl border border-cyan-500/30 bg-cyan-950/40 p-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] backdrop-blur-md">
+            <svg class="w-full h-full text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
+            </svg>
+            <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+            <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+          </div>
+          <div>
+            <div class="text-lg font-bold tracking-wide text-white">映序 · Visora AI</div>
+            <div class="text-[11px] mono text-cyan-400/80 tracking-wider">CANVAS STUDIO KERNEL</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/30 px-3.5 py-1 text-xs mono text-emerald-400 backdrop-blur-md">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399] animate-pulse"></span>
+          <span>SYSTEM ONLINE</span>
+          <span class="text-white/20">|</span>
+          <span class="text-emerald-300/80">MCP READY</span>
+        </div>
+      </div>
+
+      <!-- 中部：品牌视觉与 MiMo 风格终端卡片 -->
+      <div class="my-auto py-8">
+        <div class="inline-flex items-center gap-2 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs mono text-cyan-300 backdrop-blur-sm mb-4">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>多模态视觉大模型 · 本地 Agent 协同</span>
+        </div>
+
+        <h1 class="text-5xl xl:text-6xl font-extrabold tracking-tight text-white leading-tight">
+          把灵感，<br>
+          <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-teal-200 to-indigo-300">编排成工业级作品。</span>
+        </h1>
+        <p class="mt-4 max-w-xl text-base text-slate-300/90 leading-relaxed font-normal">
+          面向创作者与开发者的下一代视觉工作台。支持无限画布自由编排、自备模型接入、毫秒级流式渲染，并与本机 Codex / Claude Code 实现 MCP 级实时联动。
+        </p>
+
+        <!-- MiMo Code 风格交互式终端 HUD -->
+        <div class="mt-8 rounded-xl border border-white/10 bg-[#0c1017]/85 shadow-2xl backdrop-blur-xl overflow-hidden mimo-glow-cyan">
+          <div class="flex items-center justify-between border-b border-white/[0.08] bg-white/[0.03] px-4 py-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+              <span class="ml-2 mono text-xs text-slate-400">visora-agent --stdio</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs mono text-slate-500">
+              <span>PORT: 17371</span>
+              <span class="text-emerald-400 font-medium">● 14ms</span>
+            </div>
+          </div>
+
+          <div class="p-5 mono text-xs leading-relaxed text-slate-300 space-y-2">
+            <div class="flex items-center justify-between text-cyan-400">
+              <div class="flex items-center gap-2">
+                <span>&gt;_</span>
+                <span class="text-slate-100 font-medium">visora canvas --connect --mcp-tools active</span>
+              </div>
+              <button onclick="copyCommand()" class="text-[11px] text-cyan-400/70 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+                <span id="copy-text">复制指令</span>
+              </button>
+            </div>
+            <div class="text-slate-400">
+              [<span class="text-emerald-400">OK</span>] Initialized 8 canvas nodes (Text, Image Diffusion, Video, Audio)
+            </div>
+            <div class="text-slate-400">
+              [<span class="text-emerald-400">OK</span>] Codex app-server bridge established (session active)
+            </div>
+            <div class="flex items-center gap-2 text-slate-400">
+              <span class="text-cyan-400">➜</span>
+              <span>Listening on: <code class="text-amber-300 bg-amber-500/10 px-1 py-0.5 rounded">http://127.0.0.1:17371</code></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 大能力特征矩阵 -->
+        <div class="mt-6 grid grid-cols-3 gap-3.5">
+          <div class="glass-card-subtle rounded-xl p-4 transition-all">
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-2.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+            </div>
+            <div class="text-xs font-semibold text-slate-200">无限画布编排</div>
+            <div class="mt-1 text-[11px] text-slate-400">多节点拓扑自由连线</div>
+          </div>
+          <div class="glass-card-subtle rounded-xl p-4 transition-all">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="text-xs font-semibold text-slate-200">本地 Agent 协同</div>
+            <div class="mt-1 text-[11px] text-slate-400">Codex / Claude MCP 互通</div>
+          </div>
+          <div class="glass-card-subtle rounded-xl p-4 transition-all">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <div class="text-xs font-semibold text-slate-200">多模态流式生成</div>
+            <div class="mt-1 text-[11px] text-slate-400">自备密钥与低延迟推理</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底栏合规与信息 -->
+      <div class="flex items-center justify-between border-t border-white/[0.08] pt-4 text-xs text-slate-400">
+        <div class="flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>Local-first · 数据本地留存与安全凭据隔离</span>
+        </div>
+        <div class="mono text-[11px] text-slate-500">MIT LICENSE · BUILD 2026</div>
+      </div>
+    </aside>
+
+    <!-- 右侧：浮空暗晶认证面板 (Login Deck) -->
+    <section class="relative flex items-center justify-center px-6 py-12 lg:px-10">
+
+      <!-- 浮空玻璃卡片 -->
+      <div class="relative z-10 w-full max-w-[420px] rounded-2xl glass-card p-8 shadow-2xl mimo-glow-cyan border border-white/10">
+
+        <h2 id="login-title" class="text-2xl font-bold tracking-tight text-white mb-6 text-center">登录创作台</h2>
+
+        <!-- 登录 / 注册 Tab 胶囊 -->
+        <div class="grid grid-cols-2 rounded-xl bg-white/[0.04] p-1 border border-white/[0.08] mb-6">
+          <button type="button" class="py-2 text-center text-xs font-semibold text-white bg-white/[0.08] rounded-lg shadow-sm border border-white/10 transition-all">
+            登录
+          </button>
+          <button type="button" disabled class="flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-slate-500 cursor-not-allowed">
+            注册
+            <span class="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-slate-400">暂不开放</span>
+          </button>
+        </div>
+
+        <!-- 登录表单 -->
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>工作邮箱 / Developer Email</span>
+              <span class="mono text-[10px] text-slate-500">REQUIRED</span>
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </span>
+              <input
+                id="email"
+                type="email"
+                required
+                placeholder="developer@visora.ai"
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 bg-black/40 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all mono text-xs"
+              >
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-medium text-slate-300">访问凭据 / Password</label>
+              <a href="javascript:void(0)" class="text-[11px] text-slate-500 hover:text-cyan-400 transition-colors">忘记凭据？</a>
+            </div>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              </span>
+              <input
+                id="password"
+                type="password"
+                required
+                placeholder="••••••••••••"
+                class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-white/10 bg-black/40 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all mono text-xs"
+              >
+              <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-200">
+                <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <button
+            id="submit-btn"
+            type="submit"
+            class="w-full mt-2 py-3 px-4 rounded-xl font-semibold text-sm text-black bg-gradient-to-r from-cyan-400 via-teal-300 to-cyan-300 mimo-glow-btn hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+          >
+            <span id="btn-text">登录创作台</span>
+            <svg id="btn-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+
+          <!-- 模拟状态提示 -->
+          <div id="status-msg" class="hidden text-center text-xs mono text-cyan-400 pt-1">
+            &gt; <span id="status-text">正在验证会话...</span>
+          </div>
+        </form>
+
+        <!-- 分割线 -->
+        <div class="my-6 flex items-center gap-3">
+          <span class="h-px flex-1 bg-white/[0.08]"></span>
+          <span class="mono text-[10px] text-slate-500">OR CONNECT VIA</span>
+          <span class="h-px flex-1 bg-white/[0.08]"></span>
+        </div>
+
+        <!-- 第三方不可用状态 -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" disabled class="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500 cursor-not-allowed">
+            <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 2C4.36 2 1 4.91 1 8.5c0 1.99 1.01 3.77 2.6 4.96L3 17l3.86-1.29C7.45 15.89 8 16 8.5 16c4.14 0 7.5-2.91 7.5-6.5S12.64 2 8.5 2z"/></svg>
+            <span>微信扫码</span>
+          </button>
+          <button type="button" disabled class="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500 cursor-not-allowed">
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <span>短信验证</span>
+          </button>
+        </div>
+
+        <p class="mt-4 text-center text-[11px] text-slate-500 leading-relaxed">
+          内测期间账号由平台统一分配，注册、找回密码与第三方快捷接入正在排期中。
+        </p>
+
+        <!-- 免登录离线画布按钮 -->
+        <a
+          href="/canvas"
+          class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] py-2.5 text-center mono text-xs text-slate-400 hover:text-cyan-300 hover:border-cyan-500/40 hover:bg-cyan-950/20 transition-all"
+        >
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>免登录 · 继续使用本地独立画布</span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('password');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function copyCommand() {
+      navigator.clipboard.writeText('visora canvas --connect --mcp-tools active');
+      const text = document.getElementById('copy-text');
+      text.innerText = '已复制!';
+      text.classList.add('text-emerald-400');
+      setTimeout(() => {
+        text.innerText = '复制指令';
+        text.classList.remove('text-emerald-400');
+      }, 2000);
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      const btnText = document.getElementById('btn-text');
+      const statusMsg = document.getElementById('status-msg');
+      const statusText = document.getElementById('status-text');
+
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-not-allowed');
+      btnText.innerText = '正在核对凭据...';
+      statusMsg.classList.remove('hidden');
+      statusText.innerText = '正在建立安全加密通道 (TLS 1.3)...';
+
+      setTimeout(() => {
+        statusText.innerText = '会话已确认，正在挂载画布工作空间...';
+      }, 900);
+
+      setTimeout(() => {
+        statusText.innerText = '登录成功！即将跳转...';
+        statusMsg.classList.remove('text-cyan-400');
+        statusMsg.classList.add('text-emerald-400');
+        setTimeout(() => {
+          window.location.href = '/canvas';
+        }, 800);
+      }, 1800);
+    }
+  </script>
+</body>
+</html>

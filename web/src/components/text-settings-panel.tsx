@@ -22,7 +22,7 @@ export function TextSettingsPanel({ config, onConfigChange, theme, className = "
             <div className={className} style={{ color: theme.node.text }} onMouseDown={(event) => event.stopPropagation()}>
                 <div className="text-lg font-semibold">{t("settingsPanels.text.title")}</div>
                 <div className="space-y-2.5">
-                    <div className="text-sm font-medium" style={{ color: theme.node.muted }}>
+                    <div className="canvas-field-label" style={{ color: theme.node.muted }}>
                         {t("settingsPanels.text.reasoning")}
                     </div>
                     <div className="grid grid-cols-5 gap-2">

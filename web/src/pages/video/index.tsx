@@ -1,6 +1,7 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckSquare, ClipboardPaste, Download, FolderPlus, History, LoaderCircle, Plus, SlidersHorizontal, Sparkles, Trash2, Upload, VideoIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, ClipboardPaste, Download, FolderPlus, History, LoaderCircle, Plus, SlidersHorizontal, Sparkles, Trash2, Upload, VideoIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { App, Button, Checkbox, Drawer, Empty, Input, Modal, Tag, Typography } from "antd";
+import { Button as HeroButton, Surface } from "@heroui/react";
+import { App, Button, Drawer, Modal, Tag, Typography } from "@/components/ui/heroui-compat";
 import localforage from "localforage";
 import { nanoid } from "nanoid";
 import { saveAs } from "file-saver";
@@ -9,8 +10,14 @@ import { useTranslation } from "react-i18next";
 import { AssetPickerModal, type InsertAssetPayload } from "@/components/canvas/asset-picker-modal";
 import { ModelPicker } from "@/components/model-picker";
 import { PromptSelectDialog } from "@/components/prompts/prompt-select-dialog";
+import { StudioEmptyState, StudioPageHeader } from "@/components/studio/studio-primitives";
+import { Button as ShadcnButton } from "@/components/ui/button";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupTextarea } from "@/components/ui/input-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { VideoSettingsPanel, normalizeVideoResolutionValue, normalizeVideoSizeValue, videoModeLabel, videoSizeLabel } from "@/components/video-settings-panel";
 import { canvasThemes } from "@/lib/canvas-theme";
+import { imageReferenceLabel } from "@/lib/image-reference-prompt";
 import { clampVideoSeconds } from "@/lib/media-size";
 import { formatBytes, formatDuration } from "@/lib/image-utils";
 import { deleteStoredMedia, resolveMediaUrl } from "@/services/file-storage";
@@ -64,8 +71,8 @@ type GenerationLogConfig = Pick<AiConfig, "model" | "videoModel" | "size" | "vqu
 
 type UpdateAiConfig = <K extends keyof AiConfig>(key: K, value: AiConfig[K]) => void;
 
-const LOG_STORE_KEY = "infinite-canvas:video_generation_logs";
-const logStore = localforage.createInstance({ name: "infinite-canvas", storeName: "video_generation_logs" });
+const LOG_STORE_KEY = "visora:video_generation_logs";
+const logStore = localforage.createInstance({ name: "visora", storeName: "video_generation_logs" });
 
 export default function VideoPage() {
     const { message } = App.useApp();
@@ -369,141 +376,187 @@ export default function VideoPage() {
     };
 
     return (
-        <div className="flex h-full flex-col overflow-hidden bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
-            <main className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)]">
-                <aside className="thin-scrollbar hidden min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:block">
-                    <LogPanel logs={logs} selectedLogIds={selectedLogIds} activeLogId={previewLog?.id} onSelectedLogIdsChange={setSelectedLogIds} onCreateSession={createSession} onDeleteSelected={() => setDeleteConfirmOpen(true)} onPreviewLog={previewGenerationLog} />
-                </aside>
-
-                <section className="grid gap-3 lg:min-h-0 lg:overflow-hidden xl:grid-cols-[420px_minmax(0,1fr)]">
-                    <div className="thin-scrollbar flex flex-col rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:min-h-0 lg:overflow-y-auto">
-                        <div className="flex items-start justify-between gap-3">
-                            <h1 className="text-2xl font-semibold text-stone-950 dark:text-stone-100">{t("videoWorkbench.title")}</h1>
-                            <div className="flex shrink-0 gap-2 lg:hidden">
-                                <Button icon={<History className="size-4" />} onClick={() => setLogsOpen(true)}>
-                                    {t("workbench.logs")}
-                                </Button>
-                                <Button icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
-                                    {t("workbench.settings")}
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 space-y-5">
-                            <div>
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                    <span className="text-base font-semibold">{t("workbench.prompt")}</span>
-                                    <div className="flex gap-2">
-                                        <Button size="small" icon={<BookOpen className="size-3.5" />} onClick={() => setPromptDialogOpen(true)}>
-                                            {t("workbench.viewPrompts")}
-                                        </Button>
-                                        <Button size="small" icon={<FolderPlus className="size-3.5" />} onClick={() => setAssetPickerOpen(true)}>
-                                            {t("workbench.viewAssets")}
-                                        </Button>
-                                    </div>
-                                </div>
-                                <Input.TextArea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={7} placeholder={t("videoWorkbench.promptPlaceholder")} />
-                            </div>
-
-                            <div className="min-w-0">
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                    <span className="text-base font-semibold">{t("videoWorkbench.references")}</span>
-                                    <div className="flex gap-2">
-                                        <Button size="small" icon={<ClipboardPaste className="size-3.5" />} onClick={() => void addReferencesFromClipboard()}>
-                                            {t("workbench.clipboard")}
-                                        </Button>
-                                        <Button size="small" icon={<Upload className="size-3.5" />} onClick={() => fileInputRef.current?.click()}>
-                                            {t("workbench.upload")}
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`hover-scrollbar hover-scrollbar-hint flex min-h-24 w-full min-w-0 max-w-full gap-2 overflow-x-scroll overflow-y-hidden rounded-lg border border-dashed p-2 pb-3 overscroll-x-contain transition-colors ${referenceDragTarget ? "border-stone-900 bg-stone-100/80 dark:border-stone-100 dark:bg-stone-900/80" : "border-stone-300 dark:border-stone-700"}`}
-                                    onDragEnter={handleReferenceDragEnter}
-                                    onDragOver={(event) => {
-                                        event.preventDefault();
-                                        event.dataTransfer.dropEffect = "copy";
-                                    }}
-                                    onDragLeave={handleReferenceDragLeave}
-                                    onDrop={handleReferenceDrop}
-                                >
-                                    {references.map((item, index) => (
-                                        <div key={item.id} className="group relative size-20 shrink-0 overflow-hidden rounded-md border border-stone-200 dark:border-stone-800">
-                                            <img src={item.dataUrl} alt={item.name} className="size-full object-cover" />
-                                            <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">{index + 1}</span>
-                                            <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
-                                            <button type="button" className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex" onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))} aria-label={t("videoWorkbench.removeImage")}>
-                                                <Trash2 className="size-3.5" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {!references.length ? <div className="flex min-w-full items-center justify-center text-sm text-stone-500">{referenceDragTarget ? t("videoWorkbench.dropReferences") : t("videoWorkbench.noImages")}</div> : null}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-stone-800 dark:bg-stone-900 sm:hidden">
-                                <span className="truncate text-stone-500 dark:text-stone-400">
-                                    {modelOptionLabel(effectiveConfig, model)} · {normalizeResolution(effectiveConfig.vquality)}p · {videoSizeLabel(effectiveConfig.size)} · {normalizeVideoSeconds(effectiveConfig.videoSeconds)}s · {videoModeLabel(effectiveConfig.videoMode)}
-                                </span>
-                                <Button size="small" type="text" icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
-                                    {t("workbench.adjust")}
-                                </Button>
-                            </div>
-
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2">
-                                <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
-                            </div>
-                        </div>
-
-                        <div className="mt-auto pt-6">
-                            <Button type="primary" size="large" block icon={<Sparkles className="size-4" />} loading={running} disabled={!canGenerate || running} onClick={() => void generate()}>
-                                {t("workbench.generate")}
+        <div className="studio-page studio-workbench flex h-full min-h-0 flex-col overflow-hidden">
+            <div className="studio-container flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                <StudioPageHeader
+                    title={t("videoWorkbench.title")}
+                    icon={VideoIcon}
+                    meta="从提示词或图片开始创作"
+                    actions={
+                        <div className="lg:hidden">
+                            <Button icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
+                                {t("workbench.settings")}
                             </Button>
                         </div>
-                    </div>
+                    }
+                />
+                <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+                    <section className="grid min-w-0 gap-5 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(390px,420px)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
+                        <Surface className="studio-panel thin-scrollbar flex min-w-0 flex-col p-5 lg:min-h-0 lg:overflow-y-auto">
+                            <div className="min-w-0 space-y-4">
+                                <div className="min-w-0">
+                                    <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
+                                        <label htmlFor="video-workspace-prompt" className="studio-field-label shrink-0">{t("workbench.prompt")}</label>
+                                    </div>
+                                    <InputGroup className="min-h-32 rounded-xl shadow-none" style={{ borderColor: "var(--studio-border)", backgroundColor: "var(--studio-raised)" }}>
+                                        <InputGroupTextarea
+                                            id="video-workspace-prompt"
+                                            className="min-h-28 px-3 py-3 text-sm leading-6 text-[var(--studio-text)] placeholder:text-[var(--studio-muted)]"
+                                            value={prompt}
+                                            onChange={(event) => setPrompt(event.target.value)}
+                                            rows={4}
+                                            placeholder={t("videoWorkbench.promptPlaceholder")}
+                                        />
+                                        <InputGroupAddon align="block-end" className="flex-wrap justify-between gap-y-2 border-t border-[var(--studio-border)]">
+                                            <InputGroupText className="text-xs">{prompt.trim().length} 字</InputGroupText>
+                                            <div className="flex min-w-0 flex-wrap items-center gap-1">
+                                                <InputGroupButton variant="ghost" size="xs" onClick={() => setPromptDialogOpen(true)}>
+                                                    <BookOpen className="size-3.5" />提示词库
+                                                </InputGroupButton>
+                                                <InputGroupButton variant="ghost" size="xs" onClick={() => setAssetPickerOpen(true)}>
+                                                    <FolderPlus className="size-3.5" />我的资产
+                                                </InputGroupButton>
+                                                {prompt ? <InputGroupButton variant="ghost" size="xs" onClick={() => setPrompt("")}>清空</InputGroupButton> : null}
+                                            </div>
+                                        </InputGroupAddon>
+                                    </InputGroup>
+                                </div>
 
-                    <div className="thin-scrollbar rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:min-h-0 lg:overflow-y-auto lg:p-5">
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                            <h2 className="text-xl font-semibold">{t("workbench.results")}</h2>
-                            {running ? <Tag className="m-0 px-2 py-1">{t("workbench.waiting", { time: formatDuration(elapsedMs) })}</Tag> : null}
-                        </div>
-                        {results.length ? (
-                            <div className="grid gap-4">
-                                {results.map((result) => (result.status === "success" && result.video ? <ResultVideoCard key={result.id} video={result.video} onDownload={downloadVideo} onSaveAsset={saveResultToAssets} /> : result.status === "failed" ? <FailedVideoCard key={result.id} error={result.error || t("workbench.generationFailed")} onRetry={retryResult} /> : <PendingVideoCard key={result.id} />))}
+                                <div className="min-w-0">
+                                    <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
+                                        <span className="studio-field-label shrink-0">图片 ({references.length})</span>
+                                        <div className="flex min-w-0 max-w-full flex-wrap justify-end">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <HeroButton isIconOnly variant="tertiary" size="sm" aria-label={t("workbench.clipboard")} onPress={() => void addReferencesFromClipboard()}><ClipboardPaste className="size-3.5" /></HeroButton>
+                                                </TooltipTrigger>
+                                                <TooltipContent>从剪贴板添加图片</TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </div>
+                                    <div
+                                        className="relative flex min-h-24 w-full flex-wrap items-center gap-2.5 rounded-lg transition-colors"
+                                        style={{ backgroundColor: referenceDragTarget ? "var(--studio-accent-soft)" : undefined }}
+                                        onDragEnter={handleReferenceDragEnter}
+                                        onDragOver={(event) => {
+                                            event.preventDefault();
+                                            event.dataTransfer.dropEffect = "copy";
+                                        }}
+                                        onDragLeave={handleReferenceDragLeave}
+                                        onDrop={handleReferenceDrop}
+                                    >
+                                        {references.map((item, index) => (
+                                            <div key={item.id} className="group relative size-20 shrink-0 overflow-hidden rounded-xl border border-[var(--studio-border)] shadow-sm">
+                                                <img src={item.dataUrl} alt={item.name} className="size-full object-cover" />
+                                                <span className="absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-mono text-white">{imageReferenceLabel(index)}</span>
+                                                <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
+                                                <HeroButton
+                                                    isIconOnly
+                                                    variant="danger"
+                                                    size="sm"
+                                                    className="absolute right-1.5 top-1.5 hidden group-hover:flex"
+                                                    onPress={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
+                                                    aria-label={t("videoWorkbench.removeImage")}
+                                                >
+                                                    <Trash2 className="size-3.5" />
+                                                </HeroButton>
+                                            </div>
+                                        ))}
+                                        <HeroButton variant="tertiary" className="studio-reference-action" onPress={() => fileInputRef.current?.click()}>
+                                            <span className="studio-reference-action-icon"><Plus className="size-4" /></span>
+                                            <span>添加</span>
+                                        </HeroButton>
+                                        <HeroButton variant="tertiary" className="studio-reference-action" onPress={() => setLogsOpen(true)}>
+                                            <span className="studio-reference-action-icon"><History className="size-4" /></span>
+                                            <span>我的创作</span>
+                                        </HeroButton>
+                                        {!references.length && <p className="studio-reference-drop-hint">{referenceDragTarget ? "松开鼠标添加图片" : "拖拽或点击上传 JPG、PNG 或 WEBP 图片"}</p>}
+                                    </div>
+                                </div>
+
+                                <div className="studio-field flex min-w-0 items-center justify-between rounded-lg border border-[var(--studio-border)] bg-[var(--studio-raised)] px-3 py-2 text-sm sm:hidden">
+                                    <span className="min-w-0 flex-1 truncate text-[var(--studio-muted)]">
+                                        {modelOptionLabel(effectiveConfig, model)} · {normalizeResolution(effectiveConfig.vquality)}p · {videoSizeLabel(effectiveConfig.size)} · {normalizeVideoSeconds(effectiveConfig.videoSeconds)}s ·{" "}
+                                        {videoModeLabel(effectiveConfig.videoMode)}
+                                    </span>
+                                    <Button className="shrink-0" size="small" type="text" icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
+                                        {t("workbench.adjust")}
+                                    </Button>
+                                </div>
+
+                                <div className="hidden min-w-0 gap-4 sm:grid sm:grid-cols-2">
+                                    <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
+                                </div>
                             </div>
-                        ) : (
-                            <div className="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-dashed border-stone-300 text-center dark:border-stone-700 lg:min-h-[560px]">
-                                <VideoIcon className="mb-4 size-11 text-stone-400" />
-                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t("videoWorkbench.empty")} />
+
+                            <div className="mt-auto pt-4">
+                                <ShadcnButton size="lg" className="h-10 w-full" aria-busy={running} disabled={!canGenerate || running} onClick={() => void generate()}>
+                                    {running ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" /> : <Sparkles className="size-4" />}
+                                    {running ? t("workbench.generating") : t("workbench.generate")}
+                                </ShadcnButton>
                             </div>
-                        )}
+                        </Surface>
+
+                        <Surface className="studio-panel thin-scrollbar flex min-w-0 flex-col p-5 lg:min-h-0 lg:overflow-y-auto">
+                            <div className="studio-toolbar mb-4 justify-between gap-3">
+                                <h2 className="studio-section-title">{t("workbench.results")}</h2>
+                                {running ? <Tag className="m-0 px-2 py-1">{t("workbench.waiting", { time: formatDuration(elapsedMs) })}</Tag> : null}
+                            </div>
+                            {results.length ? (
+                                <div className="grid min-w-0 gap-4">
+                                    {results.map((result) =>
+                                        result.status === "success" && result.video ? (
+                                            <ResultVideoCard key={result.id} video={result.video} onDownload={downloadVideo} onSaveAsset={saveResultToAssets} />
+                                        ) : result.status === "failed" ? (
+                                            <FailedVideoCard key={result.id} error={result.error || t("workbench.generationFailed")} onRetry={retryResult} />
+                                        ) : (
+                                            <PendingVideoCard key={result.id} />
+                                        ),
+                                    )}
+                                </div>
+                            ) : (
+                                <StudioEmptyState title={t("videoWorkbench.empty")} icon={VideoIcon} className="min-w-0 flex-1" />
+                            )}
+                        </Surface>
+                    </section>
+                </main>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(event) => {
+                        void addReferences(event.target.files);
+                        event.target.value = "";
+                    }}
+                />
+                <Modal title="我的创作" open={logsOpen} onCancel={() => setLogsOpen(false)} footer={null} width="80vw" styles={{ body: { minHeight: "min(70dvh, 680px)" } }}>
+                    <CreationGallery
+                        logs={logs}
+                        activeLogId={previewLog?.id}
+                        onCreateSession={() => {
+                            createSession();
+                            setLogsOpen(false);
+                        }}
+                        onDelete={(id) => {
+                            setSelectedLogIds([id]);
+                            setDeleteConfirmOpen(true);
+                        }}
+                        onPreviewLog={previewGenerationLog}
+                    />
+                </Modal>
+                <Drawer title={t("workbench.settings")} placement="bottom" height="82vh" open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+                    <div className="grid min-w-0 grid-cols-2 gap-3 pb-4">
+                        <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
                     </div>
-                </section>
-            </main>
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(event) => {
-                    void addReferences(event.target.files);
-                    event.target.value = "";
-                }}
-            />
-            <Drawer title={t("workbench.logs")} placement="bottom" size="large" open={logsOpen} onClose={() => setLogsOpen(false)}>
-                <LogPanel logs={logs} selectedLogIds={selectedLogIds} activeLogId={previewLog?.id} onSelectedLogIdsChange={setSelectedLogIds} onCreateSession={createSession} onDeleteSelected={() => setDeleteConfirmOpen(true)} onPreviewLog={previewGenerationLog} />
-            </Drawer>
-            <Drawer title={t("workbench.settings")} placement="bottom" height="82vh" open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-                <div className="grid grid-cols-2 gap-3 pb-4">
-                    <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
-                </div>
-            </Drawer>
-            <PromptSelectDialog open={promptDialogOpen} onOpenChange={setPromptDialogOpen} onSelect={setPrompt} />
-            <AssetPickerModal open={assetPickerOpen} defaultTab="my-assets" onInsert={(payload) => void insertPickedAsset(payload)} onClose={() => setAssetPickerOpen(false)} />
-            <Modal title={t("workbench.deleteLogs")} open={deleteConfirmOpen} onCancel={() => setDeleteConfirmOpen(false)} onOk={deleteSelectedLogs} okText={t("common.delete")} okButtonProps={{ danger: true }} cancelText={t("common.cancel")}>
-                {t("workbench.deleteLogsConfirm", { count: selectedLogIds.length })}
-            </Modal>
+                </Drawer>
+                <PromptSelectDialog open={promptDialogOpen} onOpenChange={setPromptDialogOpen} onSelect={setPrompt} />
+                <AssetPickerModal open={assetPickerOpen} defaultTab="my-assets" onInsert={(payload) => void insertPickedAsset(payload)} onClose={() => setAssetPickerOpen(false)} />
+                <Modal title={t("workbench.deleteLogs")} open={deleteConfirmOpen} onCancel={() => setDeleteConfirmOpen(false)} onOk={deleteSelectedLogs} okText={t("common.delete")} okButtonProps={{ danger: true }} cancelText={t("common.cancel")}>
+                    {t("workbench.deleteLogsConfirm", { count: selectedLogIds.length })}
+                </Modal>
+            </div>
         </div>
     );
 }
@@ -514,11 +567,11 @@ function GenerationSettings({ config, model, updateConfig, openConfigDialog }: {
 
     return (
         <>
-            <label className="col-span-2 block min-w-0 sm:col-span-1">
-                <span className="mb-1.5 block text-sm font-semibold sm:mb-2 sm:text-base">{t("workbench.model")}</span>
-                <ModelPicker config={config} value={model} onChange={(value) => updateConfig("videoModel", value)} capability="video" fullWidth onMissingConfig={() => openConfigDialog(false)} />
+            <label className="col-span-2 block min-w-0">
+                <span className="studio-field-label mb-2">{t("workbench.model")}</span>
+                <ModelPicker config={config} value={model} onChange={(value) => updateConfig("videoModel", value)} capability="video" fullWidth className="!h-10 !rounded-xl !shadow-none" onMissingConfig={() => openConfigDialog(false)} />
             </label>
-            <div className="col-span-2">
+            <div className="col-span-2 min-w-0">
                 <VideoSettingsPanel config={config} onConfigChange={(key, value) => updateConfig(key, value)} theme={theme} showTitle={false} className="space-y-4" />
             </div>
         </>
@@ -528,10 +581,12 @@ function GenerationSettings({ config, model, updateConfig, openConfigDialog }: {
 function ResultVideoCard({ video, onDownload, onSaveAsset }: { video: GeneratedVideo; onDownload: (video: GeneratedVideo) => void; onSaveAsset: (video: GeneratedVideo) => void }) {
     const { t } = useTranslation();
     return (
-        <div className="overflow-hidden rounded-lg border border-stone-200 bg-background dark:border-stone-800">
-            <video src={video.url} controls className="aspect-video w-full bg-black object-contain" />
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-stone-200 px-3 py-2.5 dark:border-stone-800">
-                <div className="flex min-w-0 flex-wrap gap-x-2 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
+        <Surface className="studio-card min-w-0 overflow-hidden rounded-lg border">
+            <AspectRatio ratio={video.width && video.height ? video.width / video.height : 16 / 9} className="bg-black">
+                <video src={video.url} controls className="size-full object-contain" />
+            </AspectRatio>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-[var(--studio-border)] px-3 py-2.5">
+                <div className="flex min-w-0 flex-wrap gap-x-2 gap-y-1 text-xs text-[var(--studio-muted)]">
                     <span>
                         {video.width}x{video.height}
                     </span>
@@ -547,26 +602,26 @@ function ResultVideoCard({ video, onDownload, onSaveAsset }: { video: GeneratedV
                     </Button>
                 </div>
             </div>
-        </div>
+        </Surface>
     );
 }
 
 function PendingVideoCard() {
     const { t } = useTranslation();
     return (
-        <div className="relative aspect-video overflow-hidden rounded-lg border border-dashed border-stone-300 bg-stone-50 dark:border-stone-700 dark:bg-stone-900">
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-stone-500 dark:text-stone-400">
+        <Surface className="studio-card studio-loading relative aspect-video overflow-hidden rounded-lg border border-dashed !bg-[var(--studio-raised)]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-[var(--studio-muted)]">
                 <LoaderCircle className="size-6 animate-spin" />
                 <span>{t("workbench.generating")}</span>
             </div>
-        </div>
+        </Surface>
     );
 }
 
 function FailedVideoCard({ error, onRetry }: { error: string; onRetry: () => void }) {
     const { t } = useTranslation();
     return (
-        <div className="overflow-hidden rounded-lg border border-red-200 bg-red-50 dark:border-red-950 dark:bg-red-950/20">
+        <Surface className="min-w-0 overflow-hidden rounded-lg border border-red-200 bg-red-50 dark:border-red-950 dark:bg-red-950/20">
             <div className="flex aspect-video flex-col items-center justify-center gap-3 p-5 text-center">
                 <div className="text-sm font-medium text-red-600 dark:text-red-300">{t("workbench.failed")}</div>
                 <Typography.Paragraph ellipsis={{ rows: 4 }} className="!mb-0 !text-xs !text-red-500 dark:!text-red-300">
@@ -578,82 +633,63 @@ function FailedVideoCard({ error, onRetry }: { error: string; onRetry: () => voi
                     {t("workbench.retry")}
                 </Button>
             </div>
-        </div>
+        </Surface>
     );
 }
 
-function LogPanel({
-    logs,
-    selectedLogIds,
-    activeLogId,
-    onSelectedLogIdsChange,
-    onCreateSession,
-    onDeleteSelected,
-    onPreviewLog,
-}: {
+function CreationGallery({ logs, activeLogId, onCreateSession, onDelete, onPreviewLog }: {
     logs: GenerationLog[];
-    selectedLogIds: string[];
     activeLogId?: string;
-    onSelectedLogIdsChange: (ids: string[]) => void;
     onCreateSession: () => void;
-    onDeleteSelected: () => void;
+    onDelete: (id: string) => void;
     onPreviewLog: (log: GenerationLog) => void;
 }) {
-    const { t } = useTranslation();
-    const allSelected = Boolean(logs.length) && selectedLogIds.length === logs.length;
-    const toggleAll = () => onSelectedLogIdsChange(allSelected ? [] : logs.map((log) => log.id));
-
     return (
-        <>
-            <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold">{t("workbench.logs")}</h2>
-                <Tag className="m-0">{logs.length}</Tag>
+        <div className="flex min-h-[min(70dvh,680px)] flex-col">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-4">
+                <div>
+                    <p className="studio-field-label">视频生成</p>
+                    <p className="mt-1 text-sm text-[var(--studio-muted)]">共 {logs.length} 项创作</p>
+                </div>
+                <HeroButton variant="secondary" size="sm" onPress={onCreateSession}>
+                    <Sparkles className="size-3.5" />新建创作
+                </HeroButton>
             </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-                <Button size="small" icon={<Plus className="size-3.5" />} onClick={onCreateSession}>
-                    {t("workbench.new")}
-                </Button>
-                <Button size="small" icon={<CheckSquare className="size-3.5" />} disabled={!logs.length} onClick={toggleAll}>
-                    {allSelected ? t("common.cancel") : t("workbench.selectAll")}
-                </Button>
-                <Button size="small" danger icon={<Trash2 className="size-3.5" />} disabled={!selectedLogIds.length} onClick={onDeleteSelected}>
-                    {t("common.delete")}
-                </Button>
-            </div>
-            <div className="space-y-3">
-                {logs.map((log) => (
-                    <LogCard key={log.id} log={log} selected={selectedLogIds.includes(log.id)} active={activeLogId === log.id} onSelectedChange={(checked) => onSelectedLogIdsChange(checked ? [...selectedLogIds, log.id] : selectedLogIds.filter((id) => id !== log.id))} onClick={() => onPreviewLog(log)} />
-                ))}
-                {!logs.length ? <div className="flex min-h-48 items-center justify-center rounded-lg border border-dashed border-stone-300 text-center text-sm text-stone-500 dark:border-stone-700">{t("workbench.noLogs")}</div> : null}
-            </div>
-        </>
-    );
-}
 
-function LogCard({ log, selected, active, onSelectedChange, onClick }: { log: GenerationLog; selected: boolean; active: boolean; onSelectedChange: (checked: boolean) => void; onClick: () => void }) {
-    const { t } = useTranslation();
-    return (
-        <button type="button" className={`block w-full rounded-lg border p-2 text-left transition ${active ? "border-stone-900 bg-blue-50 dark:border-stone-100 dark:bg-blue-950/20" : "border-stone-200 bg-background hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-900"}`} onClick={onClick}>
-            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2">
-                <Checkbox className="mt-0.5" checked={selected} onClick={(event) => event.stopPropagation()} onChange={(event) => onSelectedChange(event.target.checked)} />
-                <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold leading-5">{log.title}</div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{log.size}</Tag>
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{log.resolution}p</Tag>
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{log.seconds}s</Tag>
-                    </div>
+            {logs.length ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    {logs.map((log) => {
+                        const active = log.id === activeLogId;
+                        const status = log.status === "success" ? "已完成" : log.status === "pending" ? "生成中" : "生成失败";
+                        return (
+                            <div key={log.id} className="group relative min-w-0">
+                                <HeroButton
+                                    variant="tertiary"
+                                    fullWidth
+                                    className={`h-auto min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-xl border p-0 text-left ${active ? "!border-[var(--studio-accent)] !bg-[var(--studio-accent-soft)]" : "border-[var(--studio-border)]"}`}
+                                    onPress={() => onPreviewLog(log)}
+                                >
+                                    <AspectRatio ratio={16 / 9} className="overflow-hidden bg-[var(--studio-raised)]">
+                                        {log.video ? <video src={log.video.url} className="size-full object-cover" muted preload="metadata" /> : <span className="grid size-full place-items-center text-[var(--studio-muted)]">{log.status === "pending" ? <LoaderCircle className="size-6 animate-spin motion-reduce:animate-none" /> : <VideoIcon className="size-6" />}</span>}
+                                    </AspectRatio>
+                                    <span className="flex min-w-0 flex-col gap-1 p-3">
+                                        <span className="line-clamp-1 text-sm font-medium text-[var(--studio-text)]">{log.title || "未命名创作"}</span>
+                                        <span className="flex items-center justify-between gap-2 text-xs text-[var(--studio-muted)]"><span className="truncate">{log.time}</span><span className="shrink-0">{status}</span></span>
+                                    </span>
+                                </HeroButton>
+                                <HeroButton isIconOnly variant="tertiary" size="sm" className="absolute right-2 top-2 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-within:opacity-100" aria-label="删除创作记录" onPress={() => onDelete(log.id)}>
+                                    <Trash2 className="size-3.5" />
+                                </HeroButton>
+                            </div>
+                        );
+                    })}
                 </div>
-                <div className="grid justify-items-end gap-2">
-                    <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none" color={log.status === "success" ? "blue" : log.status === "pending" ? "processing" : "red"}>
-                        {t(`workbench.${log.status === "success" ? "success" : log.status === "pending" ? "generating" : "failed"}`)}
-                    </Tag>
-                    <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none" color="green">
-                        {formatDuration(log.durationMs)}
-                    </Tag>
-                </div>
-            </div>
-        </button>
+            ) : (
+                <StudioEmptyState title="还没有创作" icon={VideoIcon} className="min-h-[360px] flex-1">
+                    <span>完成一次生成后，作品会保存在这里。</span>
+                </StudioEmptyState>
+            )}
+        </div>
     );
 }
 
@@ -716,11 +752,10 @@ function moveListItem<T>(items: T[], index: number, offset: number) {
 }
 
 function ReferenceOrderButtons({ index, total, onMove }: { index: number; total: number; onMove: (offset: number) => void }) {
-    if (total <= 1) return null;
     return (
-        <div className="absolute inset-x-1 bottom-1 flex justify-between">
-            <Button size="small" className="!h-6 !w-6 !min-w-6 !rounded-full !bg-white/85 !p-0 !shadow-sm" icon={<ArrowLeft className="size-3" />} disabled={index <= 0} onClick={() => onMove(-1)} />
-            <Button size="small" className="!h-6 !w-6 !min-w-6 !rounded-full !bg-white/85 !p-0 !shadow-sm" icon={<ArrowRight className="size-3" />} disabled={index >= total - 1} onClick={() => onMove(1)} />
+        <div className="absolute bottom-1 left-1 hidden items-center gap-1 group-hover:flex">
+            {index > 0 && <HeroButton isIconOnly variant="secondary" size="sm" onPress={() => onMove(-1)} aria-label="向前移动图片"><ArrowLeft className="size-3.5" /></HeroButton>}
+            {index < total - 1 && <HeroButton isIconOnly variant="secondary" size="sm" onPress={() => onMove(1)} aria-label="向后移动图片"><ArrowRight className="size-3.5" /></HeroButton>}
         </div>
     );
 }
@@ -738,7 +773,27 @@ function normalizeLogConfig(log: Partial<GenerationLog>): GenerationLogConfig {
     };
 }
 
-function buildLog({ prompt, model, config, references, durationMs, status, task, video, error }: { prompt: string; model: string; config: AiConfig; references: ReferenceImage[]; durationMs: number; status: GenerationLog["status"]; task?: VideoGenerationTask; video?: GeneratedVideo; error?: string }): GenerationLog {
+function buildLog({
+    prompt,
+    model,
+    config,
+    references,
+    durationMs,
+    status,
+    task,
+    video,
+    error,
+}: {
+    prompt: string;
+    model: string;
+    config: AiConfig;
+    references: ReferenceImage[];
+    durationMs: number;
+    status: GenerationLog["status"];
+    task?: VideoGenerationTask;
+    video?: GeneratedVideo;
+    error?: string;
+}): GenerationLog {
     const logConfig = {
         model: config.model,
         videoModel: config.videoModel,

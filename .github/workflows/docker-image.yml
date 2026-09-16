@@ -1,4 +1,4 @@
-name: Docker image
+name: Visora Docker image
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE_NAME: ghcr.io/basketikun/infinite-canvas
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/visora
 
 jobs:
   meta:
@@ -58,8 +58,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ needs.meta.outputs.labels }}
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=app-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=app-${{ matrix.arch }}
+          cache-from: type=gha,scope=visora-app-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=visora-app-${{ matrix.arch }}
 
       - name: Export digest
         shell: bash
@@ -70,7 +70,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ matrix.arch }}
+          name: visora-digests-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -92,7 +92,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
-          pattern: digests-*
+          pattern: visora-digests-*
           merge-multiple: true
 
       - name: Create multi-arch manifest

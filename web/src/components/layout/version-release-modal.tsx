@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { Modal, Tag, Timeline } from "antd";
+import { Modal, Tag, Timeline } from "@/components/ui/heroui-compat";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useVersionCheck } from "@/hooks/use-version-check";

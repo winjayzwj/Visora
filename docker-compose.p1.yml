@@ -1,0 +1,52 @@
+name: visora-p1
+
+services:
+  gateway:
+    image: visora-p1-web:local
+    build:
+      context: .
+      dockerfile: Dockerfile.p1
+      target: gateway
+    ports:
+      - "127.0.0.1:${VISORA_PORT:-8890}:3000"
+    restart: unless-stopped
+
+  legacy-prompt-bridge:
+    image: visora-p1-web:local
+    ports:
+      - "127.0.0.1:8888:3000"
+    volumes:
+      - "/private/tmp/visora-legacy-prompt-state.json:/usr/share/nginx/html/legacy-prompt-migration-payload.json:ro"
+    restart: "no"
+
+  api:
+    image: visora-p1-api:local
+    build:
+      context: .
+      dockerfile: Dockerfile.p1
+      target: api
+    # Keep Go's loopback-only guard; only the gateway publishes a host port.
+    network_mode: "service:gateway"
+    depends_on:
+      - gateway
+      - mongodb
+    environment:
+      VISORA_MONGO_URI: "mongodb://mongodb:27017/?replicaSet=visora-p1&directConnection=true"
+      VISORA_MONGO_DATABASE: visora_local
+      VISORA_ALLOWED_ORIGINS: "http://127.0.0.1:${VISORA_PORT:-8890}"
+      VISORA_LISTEN_ADDR: "127.0.0.1:8090"
+      VISORA_SESSION_TTL: "${VISORA_SESSION_TTL:?Confirm session TTL before startup}"
+      VISORA_REQUEST_TIMEOUT: "${VISORA_REQUEST_TIMEOUT:?Confirm request timeout before startup}"
+      VISORA_MAX_BODY_BYTES: "${VISORA_MAX_BODY_BYTES:?Confirm request body limit before startup}"
+      VISORA_PAGE_SIZE: "${VISORA_PAGE_SIZE:?Confirm page size before startup}"
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    command: ["mongod", "--replSet", "visora-p1", "--bind_ip_all"]
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

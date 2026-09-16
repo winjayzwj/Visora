@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, MouseEvent, PointerEvent } from "react";
-import { Button, Image } from "antd";
+import { Button, Image } from "@/components/ui/heroui-compat";
 import { FileText, Group, Image as ImageIcon, Music2, Video, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

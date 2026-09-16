@@ -8,7 +8,7 @@ const pkg = createRequire(import.meta.url)("./package.json");
 const CORS_HEADERS = {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "*",
-    "access-control-allow-headers": "*",
+    "access-control-allow-headers": "*, Authorization",
     "access-control-expose-headers": "*",
     "access-control-max-age": "86400",
 };
@@ -98,7 +98,7 @@ export function createProxyServer() {
         }
         const target = readTarget(req.url || "/");
         if (!target) {
-            sendJson(res, 200, { app: "infinite-canvas", proxy: pkg.name, version: pkg.version, usage: "/<full-target-url>" });
+            sendJson(res, 200, { app: "visora", proxy: pkg.name, version: pkg.version, usage: "/<full-target-url>" });
             return;
         }
         const startedAt = Date.now();
@@ -128,5 +128,5 @@ const host = readArg(args, "host", process.env.HOST || "127.0.0.1");
 
 createProxyServer().listen(port, host, () => {
     console.log(`${pkg.name} v${pkg.version} listening on http://${host}:${port}`);
-    console.log(`Fill this address into Infinite Canvas → 配置 → 本地代理: http://${host}:${port}`);
+    console.log(`Fill this address into Visora AI → 配置 → 本地代理: http://${host}:${port}`);
 });

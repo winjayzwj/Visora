@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>Visora prompt migration bridge</title></head>
+<body>
+<script>
+const channel = "visora-prompt-migration";
+const targetOrigin = "http://127.0.0.1:8890";
+const stateKey = "infinite-canvas:prompt_source_store_v2";
+const databaseName = "infinite-canvas";
+const storeName = "prompt_cache";
+
+function parseState(saved) {
+  try {
+    const state = saved.state || saved;
+    return { sources: Array.isArray(state.sources) ? state.sources : [], schedule: state.schedule || {} };
+  } catch {
+    return { sources: [], schedule: {} };
+  }
+}
+
+async function readState() {
+  const saved = parseState(JSON.parse(localStorage.getItem(stateKey) || "{}"));
+  if (saved.sources.length) return saved;
+  try {
+    const response = await fetch("/legacy-prompt-migration-payload.json", { cache: "no-store" });
+    return response.ok ? parseState(await response.json()) : saved;
+  } catch {
+    return saved;
+  }
+}
+
+function openStore(mode) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(databaseName);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(storeName)) return resolve(null);
+      const transaction = database.transaction(storeName, mode);
+      transaction.oncomplete = () => database.close();
+      transaction.onerror = () => reject(transaction.error);
+      resolve(transaction.objectStore(storeName));
+    };
+  });
+}
+
+async function readCache() {
+  const store = await openStore("readonly");
+  if (!store) return [];
+  return new Promise((resolve, reject) => {
+    const entries = [];
+    const request = store.openCursor();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return resolve(entries);
+      entries.push([cursor.key, cursor.value]);
+      cursor.continue();
+    };
+  });
+}
+
+async function clearLegacy() {
+  localStorage.removeItem(stateKey);
+  const store = await openStore("readwrite");
+  if (!store) return;
+  await new Promise((resolve, reject) => {
+    const request = store.clear();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
+window.addEventListener("message", async (event) => {
+  if (event.origin !== targetOrigin || !event.data || event.data.channel !== channel) return;
+  try {
+    if (event.data.type === "export") {
+      const state = await readState();
+      const cacheEntries = await readCache();
+      parent.postMessage({ channel, type: "payload", payload: { ...state, cacheEntries } }, targetOrigin);
+    }
+    if (event.data.type === "commit") {
+      const state = await readState();
+      const cacheEntries = await readCache();
+      await clearLegacy();
+      parent.postMessage({ channel, type: "cleared", counts: { sources: state.sources.length, cache: cacheEntries.length } }, targetOrigin);
+    }
+  } catch {
+    parent.postMessage({ channel, type: "failed" }, targetOrigin);
+  }
+});
+
+parent.postMessage({ channel, type: "ready" }, targetOrigin);
+</script>
+</body>
+</html>

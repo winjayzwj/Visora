@@ -1,6 +1,6 @@
 import { javascript } from "@codemirror/lang-javascript";
 import CodeMirror from "@uiw/react-codemirror";
-import { Button, Modal } from "antd";
+import { Button, Modal } from "@/components/ui/heroui-compat";
 import { Copy } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -52,7 +52,7 @@ export function ModelScriptEditor({ open, capability, modelName, value, onSave, 
             width="100vw"
             centered={false}
             onCancel={onClose}
-            wrapClassName="[&_.ant-modal]:!inset-0 [&_.ant-modal]:!top-0 [&_.ant-modal]:!m-0 [&_.ant-modal]:!max-w-none [&_.ant-modal]:!h-dvh [&_.ant-modal]:!w-full [&_.ant-modal]:!p-0 [&_.ant-modal-container]:!h-dvh [&_.ant-modal-container]:!p-0 [&_.ant-modal-content]:!h-dvh [&_.ant-modal-content]:!max-h-dvh [&_.ant-modal-content]:!rounded-none [&_.ant-modal-content]:!overflow-hidden [&_.ant-modal-body]:!h-full [&_.ant-modal-body]:!max-h-full [&_.ant-modal-body]:!overflow-hidden [&_.ant-modal-body]:!p-0"
+            className="h-dvh max-w-none rounded-none"
             styles={{
                 wrapper: { overflow: "hidden" },
                 content: { height: "100dvh", maxHeight: "100dvh", margin: 0, padding: 0, borderRadius: 0, overflow: "hidden" },

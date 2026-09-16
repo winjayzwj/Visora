@@ -8,11 +8,13 @@ import CanvasProjectPage from "@/pages/canvas/project";
 import ConfigPage from "@/pages/config";
 import HomePage from "@/pages/home";
 import ImagePage from "@/pages/image";
+import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import PromptsPage from "@/pages/prompts";
 import VideoPage from "@/pages/video";
 
 export const router = createBrowserRouter([
+    { path: "/login", element: <LoginPage /> },
     {
         element: (
             <UserLayout>

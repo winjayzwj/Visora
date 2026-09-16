@@ -1,4 +1,4 @@
-# Infinite Canvas Documentation Index
+# Visora AI Documentation Index
 
 ## Overview
 
@@ -34,6 +34,14 @@
 - [Changelog](/docs/progress/changelog)
 - [Pending Tests](/docs/progress/pending-test)
 - [TODO](/docs/progress/todo)
+
+## Local Planning
+
+- [Product Roadmap](plans/visora-roadmap.md)
+- [Requirements Mapping](plans/visora-requirements-map.md)
+- [Iteration Plan](plans/visora-iteration-plan.md)
+
+These are local Markdown planning files, not published documentation routes. P1 accounts/Admin has local acceptance evidence; later iterations remain planned.
 
 ## Notes
 

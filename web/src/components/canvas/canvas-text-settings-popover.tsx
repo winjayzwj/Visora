@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Settings2 } from "lucide-react";
-import { Button, InputNumber } from "antd";
+import { Button, InputNumber } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
 
 import { reasoningEffortLabel, TextSettingsPanel } from "@/components/text-settings-panel";
@@ -95,7 +95,7 @@ function TextSettingsPortal({ buttonRect, panelRef, placement, theme, config, co
             <TextSettingsPanel config={config} onConfigChange={onConfigChange} theme={theme} />
             {onCountChange ? (
                 <div className="mt-4 space-y-2.5">
-                    <div className="text-sm font-medium" style={{ color: theme.node.muted }}>{t("settingsPanels.text.count")}</div>
+                    <div className="canvas-field-label" style={{ color: theme.node.muted }}>{t("settingsPanels.text.count")}</div>
                     <InputNumber className="w-full" min={1} max={15} precision={0} value={count} onChange={(value) => onCountChange(value || 1)} />
                 </div>
             ) : null}

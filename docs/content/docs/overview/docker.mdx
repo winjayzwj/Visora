@@ -1,19 +1,19 @@
 ---
 title: Docker Deployment
-description: Deploy Infinite Canvas with Docker Compose
+description: Deploy Visora AI with Docker Compose
 ---
 
 # Docker Deployment
 
-## Use the published image
+## Use a configured image
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
-cd infinite-canvas
+cd /path/to/Visora
+export VISORA_IMAGE=visora:latest
 docker compose up -d
 ```
 
-Open `http://localhost:3000`.
+The root Compose file maps the container to `http://localhost:8888`.
 
 ## Build locally
 
@@ -51,9 +51,9 @@ No analytics are enabled by default. A deployment can enable GA4, Baidu Analytic
 ```yaml
 services:
   app:
-    image: ghcr.io/basketikun/infinite-canvas:latest
+    image: ${VISORA_IMAGE:-visora:latest}
     ports:
-      - "3000:3000"
+      - "8888:3000"
     environment:
       ANALYTICS_GA4_ID: G-XXXXXXXXXX
       ANALYTICS_BAIDU_ID: e8263761cc5c32f5f7a855b8203b965a

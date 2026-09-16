@@ -5,5 +5,8 @@ description: Planned follow-up work
 
 # TODO
 
+- Visora platform: P1 accounts/Admin has implementation and local acceptance evidence; cloud projects, assets and platform generation/credits remain pending. Follow the local `docs/plans/visora-roadmap.md`, `docs/plans/visora-requirements-map.md` and `docs/plans/visora-iteration-plan.md`: I00 baseline/decisions, I01–I03 personal cloud data, I04–I05 image jobs/credits, I06 trial deployment, I07–I12 media/workbench. I13–I20 retain membership, roles, teams, operations and public registration as conditional later proposals, not approved MVP scope. Real payments, Redis/MQ and microservices remain outside this plan. Existing branding and migration tasks remain separately tracked.
+  - Admin-side note: the admin console now has working backend APIs for points ledger (user / team pool / team member as three separate balances), AI model catalog, teams and members, membership plans and applications, admin accounts plus a read-only authorization matrix, and dashboard aggregates. This is the management surface only. The user-facing path those numbers depend on — cloud projects, asset upload, job admission, credit freezing and settlement — is still the pending I01–I05 work, so the dashboard shows real admin-side counts and no fabricated generation metrics.
+
 - Replace the Claude Code CLI adapter with a Claude Agent SDK adapter and improve the tool queue, following the [Local Agent Integration Plan](/docs/progress/local-agent-integration-plan).
 - Add Skill installation from web search, Skill resource-file management, and controlled local-memory persistence.

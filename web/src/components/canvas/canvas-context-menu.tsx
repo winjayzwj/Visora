@@ -15,7 +15,7 @@ export function CanvasNodeContextMenu({ menu, canCaptureVideoFrame, canGroup, ca
     useEffect(() => {
         const close = (event: PointerEvent) => {
             const target = event.target;
-            if (target instanceof Element && target.closest(".ant-popover")) return;
+            if (target instanceof Element && target.closest('[role="dialog"]')) return;
             onClose();
         };
         window.addEventListener("pointerdown", close);

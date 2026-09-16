@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
-import { Popover } from "antd";
+import { Popover } from "@/components/ui/heroui-compat";
 import { Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

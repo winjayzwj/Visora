@@ -5,15 +5,15 @@ import { createAgentLogWriter } from "../utils/agent-runtime.js";
 import { errorMessage } from "../utils/value.js";
 import type { AgentEmit } from "./types.js";
 
-/** 使用 Claude CLI 执行一次带 Canvas Agent 工具的任务。 */
+/** 使用 Claude CLI 执行一次带 Visora AI Agent 工具的任务。 */
 export function runClaudeTurn(prompt: string, emit: AgentEmit) {
     const fullPrompt = withAgentPrompt(prompt);
     if (!fullPrompt) return;
-    const child = spawnAgent("claude", ["-p", "--output-format", "stream-json", "--verbose", "--include-partial-messages", "--allowedTools", "mcp__infinite-canvas__*", fullPrompt], emit);
+    const child = spawnAgent("claude", ["-p", "--output-format", "stream-json", "--verbose", "--include-partial-messages", "--allowedTools", "mcp__visora__*", fullPrompt], emit);
     if (child) pipeJsonLines(child, emit, "claude");
 }
 
-/** 为 Claude CLI 请求拼接 Canvas Agent 指令。 */
+/** 为 Claude CLI 请求拼接 Visora AI Agent 指令。 */
 function withAgentPrompt(prompt: string) {
     return prompt.trim() ? `${AGENT_PROMPT}\n\n用户请求：${prompt}` : "";
 }

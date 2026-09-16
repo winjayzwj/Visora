@@ -1,17 +1,14 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { ProConfigProvider } from "@ant-design/pro-components";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { App, ConfigProvider } from "antd";
-import enUS from "antd/es/locale/en_US";
-import zhCN from "antd/es/locale/zh_CN";
+import { App } from "@/components/ui/heroui-compat";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import dayjs from "dayjs";
 import "dayjs/locale/zh-cn";
 import { useTranslation } from "react-i18next";
 
 import { ClientRootInit } from "@/components/layout/client-root-init";
 import type { AppLocale } from "@/i18n";
-import { getAntThemeConfig } from "@/lib/app-theme";
 import { useThemeStore } from "@/stores/use-theme-store";
 
 const queryClient = new QueryClient({
@@ -32,6 +29,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         document.documentElement.classList.toggle("dark", dark);
+        // HeroUI 默认主题同时认 `.dark` 与 `[data-theme="dark"]`，两个都写上。
+        document.documentElement.setAttribute("data-theme", theme);
         document.documentElement.style.colorScheme = theme;
     }, [dark, theme]);
 
@@ -43,14 +42,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
     }, [locale, t]);
 
     return (
-        <ConfigProvider locale={locale === "zh-CN" ? zhCN : enUS} theme={getAntThemeConfig(dark)}>
-            <ProConfigProvider dark={dark}>
-                <App>
-                    <QueryClientProvider client={queryClient}>
-                        <ClientRootInit>{children}</ClientRootInit>
-                    </QueryClientProvider>
-                </App>
-            </ProConfigProvider>
-        </ConfigProvider>
+        <TooltipProvider delayDuration={450} skipDelayDuration={250}>
+            <App>
+                <QueryClientProvider client={queryClient}>
+                    <ClientRootInit>{children}</ClientRootInit>
+                </QueryClientProvider>
+            </App>
+        </TooltipProvider>
     );
 }

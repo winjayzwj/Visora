@@ -99,7 +99,7 @@ export class CodexAppClient {
             stop();
             emit("agent_log", { text: `Codex app-server exited: ${code ?? 0}` });
         });
-        await client.request("initialize", { clientInfo: { name: "canvas-agent", title: "Infinite Canvas Agent", version: VERSION }, capabilities: { experimentalApi: true, requestAttestation: false } });
+        await client.request("initialize", { clientInfo: { name: "visora-agent", title: "Visora AI Agent", version: VERSION }, capabilities: { experimentalApi: true, requestAttestation: false } });
         client.notify("initialized");
         return client;
     }
@@ -774,7 +774,7 @@ function turnCacheKey(threadId: string, turnId: string) {
     return `${threadId}\0${turnId}`;
 }
 
-/** 生成 Codex 调用 Canvas Agent MCP 的启动命令。 */
+/** 生成 Codex 调用 Visora AI Agent MCP 的启动命令。 */
 function canvasAgentMcpCommand() {
     const current = process.argv.find((arg) => /index\.(t|j)s$/.test(arg)) || "";
     const entry = path.resolve(current || fileURLToPath(new URL("../index.js", import.meta.url)));
@@ -784,7 +784,7 @@ function canvasAgentMcpCommand() {
 
 /** 生成 Codex app-server 使用的 MCP 配置。 */
 function codexConfig(permissionMode: AgentPermissionMode) {
-    return { model_reasoning_summary: "auto", ...(permissionMode === "automatic" ? { approvals_reviewer: "auto_review" } : {}), mcp_servers: { "infinite-canvas": { command: canvasAgentMcp.command, args: canvasAgentMcp.args, default_tools_approval_mode: "approve", startup_timeout_sec: 20, tool_timeout_sec: 90 } } };
+    return { model_reasoning_summary: "auto", ...(permissionMode === "automatic" ? { approvals_reviewer: "auto_review" } : {}), mcp_servers: { visora: { command: canvasAgentMcp.command, args: canvasAgentMcp.args, default_tools_approval_mode: "approve", startup_timeout_sec: 20, tool_timeout_sec: 90 } } };
 }
 
 function threadSettings(permissionMode: AgentPermissionMode) {

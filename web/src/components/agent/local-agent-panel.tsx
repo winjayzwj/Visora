@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { App, Button, Tooltip } from "antd";
+import { App, Button, Tooltip } from "@/components/ui/heroui-compat";
 import dayjs from "dayjs";
 import { Bot, History, MessageSquare, PanelRightClose, PlugZap, Plus, Sparkles, Terminal } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -88,7 +88,7 @@ type AgentHelloEvent = { ok?: boolean; protocolVersion?: number; clientId?: stri
 type AgentWorkspaceEvent = { activeThreadId?: string; threadId?: string; sourceClientId?: string; emptyThread?: boolean; draftThread?: boolean; conversation?: AgentConversationState };
 type AgentChatEvent = { threadId?: string; turnId?: string; sourceClientId?: string; replayed?: boolean; message?: AgentChatItem };
 type AgentBootstrapEvent = { type?: "codex.preparing" | "codex.prepare_failed" | "mcp.startup" | "mcp.complete"; phase?: "preheat" | "runtime"; threadId?: string; name?: string; status?: "starting" | "ready" | "failed" | "cancelled"; error?: string | null; failureReason?: string | null };
-type AgentClientGlobal = typeof globalThis & { __infiniteCanvasAgentClientIdPromise?: Promise<string> };
+type AgentClientGlobal = typeof globalThis & { __visoraAgentClientIdPromise?: Promise<string> };
 
 function authoritativeHistoryTurnKeys(threadId: string, settledTurnIds: string[]) {
     return new Set(settledTurnIds.map((turnId) => `${threadId}\0${turnId}`));
@@ -341,8 +341,8 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
 
     useEffect(() => {
         if (!clientReady || !enabled || !token.trim()) return;
-        localStorage.setItem("canvas-agent-url", endpoint);
-        localStorage.setItem("canvas-agent-token", token);
+                localStorage.setItem("visora-agent-url", endpoint);
+                localStorage.setItem("visora-agent-token", token);
         const clientId = clientIdRef.current;
         let disposed = false;
         let protocolRejected = false;
@@ -606,8 +606,8 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
             const savedEffort = useAgentStore.getState().reasoningEffort;
             const efforts = current.supportedReasoningEfforts.map((item) => item.reasoningEffort);
             const nextEffort = efforts.includes(savedEffort as AgentReasoningEffort) ? savedEffort as AgentReasoningEffort : current.defaultReasoningEffort || efforts[0];
-            localStorage.setItem("canvas-agent-model", current.model);
-            localStorage.setItem("canvas-agent-reasoning-effort", nextEffort);
+            localStorage.setItem("visora-agent-model", current.model);
+            localStorage.setItem("visora-agent-reasoning-effort", nextEffort);
             setAgentState({ models, model: current.model, reasoningEffort: nextEffort });
         }).catch((error) => addEventLog(rt("modelListFailed"), error));
     }, [connected, endpoint, setAgentState, token]);
@@ -890,7 +890,7 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
 
     const changePermissionMode = (nextMode: AgentPermissionMode) => {
         const apply = () => {
-            localStorage.setItem("canvas-agent-permission-mode", nextMode);
+            localStorage.setItem("visora-agent-permission-mode", nextMode);
             setAgentState({ permissionMode: nextMode });
         };
         if (nextMode !== "full") return apply();
@@ -1427,12 +1427,12 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
                             const selected = models.find((item) => item.model === model);
                             if (!selected) return;
                             const effort = selected.defaultReasoningEffort || selected.supportedReasoningEfforts[0]?.reasoningEffort;
-                            localStorage.setItem("canvas-agent-model", model);
-                            if (effort) localStorage.setItem("canvas-agent-reasoning-effort", effort);
+                            localStorage.setItem("visora-agent-model", model);
+                            if (effort) localStorage.setItem("visora-agent-reasoning-effort", effort);
                             setAgentState({ model, ...(effort ? { reasoningEffort: effort } : {}) });
                         }}
                         onReasoningEffortChange={(reasoningEffort) => {
-                            localStorage.setItem("canvas-agent-reasoning-effort", reasoningEffort);
+                            localStorage.setItem("visora-agent-reasoning-effort", reasoningEffort);
                             setAgentState({ reasoningEffort });
                         }}
                         left={
@@ -1454,7 +1454,7 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
 
 function acquireAgentClientId() {
     const scope = globalThis as AgentClientGlobal;
-    scope.__infiniteCanvasAgentClientIdPromise ||= (async () => {
+    scope.__visoraAgentClientIdPromise ||= (async () => {
         const storedClientId = readAgentClientId();
         let clientId = storedClientId || randomId();
         if (!navigator.locks) {
@@ -1463,7 +1463,7 @@ function acquireAgentClientId() {
         }
         while (true) {
             const acquired = await new Promise<boolean>((resolve, reject) => {
-                void navigator.locks.request(`infinite-canvas-agent:${clientId}`, { ifAvailable: true }, async (lock) => {
+                void navigator.locks.request(`visora-agent:${clientId}`, { ifAvailable: true }, async (lock) => {
                     if (!lock) return resolve(false);
                     resolve(true);
                     await new Promise<void>(() => undefined);
@@ -1480,12 +1480,12 @@ function acquireAgentClientId() {
         saveAgentClientId(clientId);
         return clientId;
     });
-    return scope.__infiniteCanvasAgentClientIdPromise;
+    return scope.__visoraAgentClientIdPromise;
 }
 
 function readAgentClientId() {
     try {
-        return sessionStorage.getItem("canvas-agent-client-id") || "";
+        return sessionStorage.getItem("visora-agent-client-id") || "";
     } catch {
         return "";
     }
@@ -1493,7 +1493,7 @@ function readAgentClientId() {
 
 function saveAgentClientId(clientId: string) {
     try {
-        sessionStorage.setItem("canvas-agent-client-id", clientId);
+        sessionStorage.setItem("visora-agent-client-id", clientId);
     } catch {
         // The in-memory identity still keeps request ownership consistent within the current page session.
     }

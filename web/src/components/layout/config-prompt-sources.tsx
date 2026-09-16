@@ -1,4 +1,4 @@
-import { App, Button, Select, Switch, Tag } from "antd";
+import { App, Button, Select, Switch, Tag } from "@/components/ui/heroui-compat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";

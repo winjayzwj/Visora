@@ -1,4 +1,4 @@
-import { App, Button, Checkbox, Input, Modal, Tabs } from "antd";
+import { App, Button, Checkbox, Input, Modal, Tabs } from "@/components/ui/heroui-compat";
 import { RefreshCw, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";

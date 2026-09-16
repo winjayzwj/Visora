@@ -1,4 +1,13 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M32 8L58 54H46L32 29L18 54H6L32 8Z" fill="currentColor"/>
-  <path d="M32 40L40 54H24L32 40Z" fill="currentColor"/>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">Visora</title>
+  <rect x="2" y="2" width="60" height="60" rx="18" fill="#E8F1FF"/>
+  <circle cx="15" cy="25" r="6" fill="#2563EB"/>
+  <circle cx="35" cy="25" r="6" fill="#2563EB"/>
+  <path d="M7 43C7 28.641 16.193 19 26 19C35.807 19 45 28.641 45 43V62H7V43Z" fill="#2563EB"/>
+  <circle cx="20" cy="35" r="2.5" fill="#FFFFFF"/>
+  <circle cx="32" cy="35" r="2.5" fill="#FFFFFF"/>
+  <path d="M23 42C23 39.791 24.791 38 27 38C29.209 38 31 39.791 31 42V44H23V42Z" fill="#FFFFFF"/>
+  <rect x="34" y="35" width="22" height="22" rx="6" fill="#FFFFFF"/>
+  <path d="M35 48C35 44.686 37.686 42 41 42C44.314 42 47 44.686 47 48V52C47 55.314 44.314 58 41 58C37.686 58 35 55.314 35 52V48Z" fill="#2563EB"/>
+  <path d="M48 50C48 46.686 50.686 44 54 44H56V56H54C50.686 56 48 53.314 48 50Z" fill="#2563EB"/>
 </svg>

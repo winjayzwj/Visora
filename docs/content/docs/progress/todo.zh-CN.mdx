@@ -7,5 +7,13 @@ description: 当前项目后续值得处理的事项
 
 本文档用来记录当前项目后续比较值得处理的事项。
 
+- Visora 网页版平台化：P1 账号/后台已有实现和本地验收记录；云项目、素材与平台生成/额度仍待实施。按本地 `docs/plans/visora-roadmap.md`、`docs/plans/visora-requirements-map.md` 和 `docs/plans/visora-iteration-plan.md` 执行：I00 基线/决策、I01–I03 个人云数据、I04–I05 图片任务/积分、I06 试用部署、I07–I12 媒体与工作台。I13–I20 保留会员、权限、团队、运营和公开注册的条件性后续计划，不等于已批准进入 MVP；真实支付、Redis/MQ 和微服务不在本计划。品牌与迁移按原任务独立跟踪。
+
 - 本地 Agent 接入后续：按[本地 Agent 接入规划](/zh-CN/docs/progress/local-agent-integration-plan)把 Claude Code CLI Adapter 升级为 Claude Agent SDK Adapter，并完善工具队列体验。
 - Agent Skill 后续：补充网络检索安装、Skill 资源文件管理和可控的本地记忆沉淀。
+
+- HeroUI 迁移后续：主题基座与导航外壳已完成，剩余按页迁移，最后彻底移除 Ant Design。
+  - 第二阶段页面：`login`、`home`、`image`、`video`、`assets`、`prompts`、`config`、`not-found`。这些页面仍在引用 antd，且仍带硬编码强调色（例如 `pages/login/index.tsx` 与 `pages/image/index.tsx` 里的青色渐变）。
+  - 第三阶段重灾区：`components/canvas/*`（约 30 个文件）、`components/agent/*`（约 14 个文件）、设置面板，以及 `components/ui/select.tsx`。
+  - 第四阶段清理：移除 `antd`、`@ant-design/icons`、`src/lib/app-theme.ts`、`ConfigProvider`/`App` 包装层，以及 `web/src/styles/globals.css` 中剩余的 `.ant-*` 覆写。
+  - 顺带清理死代码：`components/react-bits/` 已无引用；`components/studio/studio-primitives.test.tsx` 仍在断言旧的原语结构。`DESIGN.md` 仍记录旧的墨绿色板与已移除的特效，待迁移收尾后重写。

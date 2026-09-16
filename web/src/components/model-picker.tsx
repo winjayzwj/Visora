@@ -1,9 +1,9 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Cpu } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { ListBox, Select } from "@heroui/react";
 
 import i18n from "@/i18n";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { modelOptionLabel, modelOptionName, selectableModelsByCapability, type AiConfig, type ModelCapability } from "@/stores/use-config-store";
 
@@ -20,67 +20,49 @@ type ModelPickerProps = {
 
 export function ModelPicker({ config, value, onChange, capability, className, fullWidth = false, placeholder, onMissingConfig }: ModelPickerProps) {
     const { t } = useTranslation();
-    const pickerId = useId();
-    const [open, setOpen] = useState(false);
     const options = useMemo(() => Array.from(new Set([...(config.channelMode === "local" && !capability ? [value] : []), ...selectableModelsByCapability(config, capability)].filter((model): model is string => Boolean(model)))), [capability, config, value]);
     const current = value || "";
     const pickerPlaceholder = placeholder || t("settingsPanels.model.select");
 
-    useEffect(() => {
-        const closeOtherPicker = (event: Event) => {
-            if ((event as CustomEvent<string>).detail !== pickerId) setOpen(false);
-        };
-        window.addEventListener("model-picker-open", closeOtherPicker);
-        return () => window.removeEventListener("model-picker-open", closeOtherPicker);
-    }, [pickerId]);
-
     return (
         <Select
-            open={open}
-            value={current}
-            onOpenChange={(nextOpen) => {
-                if (nextOpen && !options.length && config.channelMode === "local") onMissingConfig?.();
-                if (nextOpen) window.dispatchEvent(new CustomEvent("model-picker-open", { detail: pickerId }));
-                setOpen(nextOpen);
+            value={current || null}
+            placeholder={pickerPlaceholder}
+            onChange={(nextValue) => {
+                if (nextValue) onChange(String(nextValue));
             }}
-            onValueChange={onChange}
+            onOpenChange={(isOpen) => {
+                if (isOpen && !options.length && config.channelMode === "local") onMissingConfig?.();
+            }}
+            className={cn(fullWidth ? "w-full" : "w-fit max-w-full", className)}
         >
-            <SelectTrigger
+            <Select.Trigger
                 className={cn(
-                    "canvas-composer-model-picker h-8 w-fit max-w-full gap-2 rounded-full border border-input bg-transparent px-3 text-sm font-normal shadow-sm transition-colors",
+                    "h-10 w-full max-w-full gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-normal text-foreground shadow-xs transition-colors hover:bg-surface-secondary",
                     fullWidth ? "w-full min-w-0 justify-start" : "min-w-[9rem] justify-start",
-                    "data-[state=open]:border-ring data-[state=open]:ring-2 data-[state=open]:ring-ring/20",
-                    className,
+                    "data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-focus/40",
                 )}
-                onMouseDown={(event) => event.stopPropagation()}
-                onPointerDown={(event) => event.stopPropagation()}
                 title={current ? modelOptionLabel(config, current) : pickerPlaceholder}
             >
-                <ModelIcon model={current} />
-                <span className="canvas-model-picker-text min-w-0 flex-1 truncate text-left">{current ? modelOptionLabel(config, current) : pickerPlaceholder}</span>
-            </SelectTrigger>
-            <SelectContent
-                data-canvas-no-zoom
-                className="z-[1200] w-80 max-w-[calc(100vw-24px)] rounded-xl border border-border/70 bg-popover p-1 shadow-xl"
-                position="popper"
-                align="start"
-                side="bottom"
-                sideOffset={6}
-                onPointerDown={(event) => event.stopPropagation()}
-                onMouseDown={(event) => event.stopPropagation()}
-            >
+                <Select.Value className="min-w-0 flex-1 truncate text-left" />
+                <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover data-canvas-no-zoom className="z-[1200] w-80 max-w-[calc(100vw-24px)] rounded-xl border border-border bg-surface p-1 text-foreground shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+                <ListBox>
                 {options.length ? (
                     options.map((model) => (
-                        <SelectItem key={model} value={model} textValue={modelOptionLabel(config, model)}>
+                        <ListBox.Item key={model} id={model} textValue={modelOptionLabel(config, model)}>
                             <ModelLabel config={config} model={model} />
-                        </SelectItem>
+                            <ListBox.ItemIndicator />
+                        </ListBox.Item>
                     ))
                 ) : (
-                    <SelectItem value="__empty__" disabled>
+                    <ListBox.Item id="__empty__" isDisabled>
                         {emptyModelLabel(config, capability)}
-                    </SelectItem>
+                    </ListBox.Item>
                 )}
-            </SelectContent>
+                </ListBox>
+            </Select.Popover>
         </Select>
     );
 }

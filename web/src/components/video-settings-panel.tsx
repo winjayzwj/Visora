@@ -1,5 +1,4 @@
 import { type ReactNode } from "react";
-import { Slider } from "antd";
 import { useTranslation } from "react-i18next";
 
 import i18n from "@/i18n";
@@ -7,6 +6,9 @@ import { ImageSettingsTheme } from "@/components/image-settings-panel";
 import { type CanvasTheme } from "@/lib/canvas-theme";
 import { clampVideoSeconds, computeVideoSize, inferVideoRatio, parseVideoResolution, readVideoDimensions, VIDEO_SECONDS_MAX, VIDEO_SECONDS_MIN, videoRatioOptions } from "@/lib/media-size";
 import { type AiConfig } from "@/stores/use-config-store";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const resolutionOptions = [
     { value: "480", label: "480p" },
@@ -52,11 +54,9 @@ export function VideoSettingsPanel({ config, onConfigChange, theme, showTitle = 
                 {showTitle ? <div className="text-lg font-semibold">{t("settingsPanels.video.title")}</div> : null}
                 <SettingGroup title={t("settingsPanels.video.quality")} color={theme.node.muted}>
                     <div className="grid grid-cols-4 gap-2.5">
-                        {resolutionOptions.map((item) => (
-                            <OptionPill key={item.value} selected={resolution === item.value} theme={theme} onClick={() => selectResolution(item.value)}>
-                                {item.label}
-                            </OptionPill>
-                        ))}
+                        <ToggleGroup type="single" value={resolution} onValueChange={(value) => { if (value) selectResolution(value); }} variant="outline" size="sm" className="col-span-3 grid w-full grid-cols-3 gap-2.5" aria-label={t("settingsPanels.video.quality")}>
+                            {resolutionOptions.map((item) => <ToggleGroupItem key={item.value} value={item.value} className="h-9 justify-center">{item.label}</ToggleGroupItem>)}
+                        </ToggleGroup>
                         <ResolutionInput value={resolution} theme={theme} onChange={selectResolution} />
                     </div>
                 </SettingGroup>
@@ -68,37 +68,26 @@ export function VideoSettingsPanel({ config, onConfigChange, theme, showTitle = 
                     </div>
                 </SettingGroup>
                 <SettingGroup title={t("settingsPanels.video.ratio")} color={theme.node.muted}>
-                    <div className="grid grid-cols-4 gap-2.5">
+                    <ToggleGroup type="single" value={selectedRatio} onValueChange={(value) => { if (value) applySize(resolution, value); }} variant="outline" size="sm" className="grid w-full grid-cols-4 gap-2.5" aria-label={t("settingsPanels.video.ratio")}>
                         {videoRatioOptions.map((item) => (
-                            <button
-                                key={item.value}
-                                type="button"
-                                className="flex h-[72px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border bg-transparent text-sm transition hover:opacity-80"
-                                style={{ borderColor: selectedRatio === item.value ? theme.node.text : theme.node.stroke, color: theme.node.text }}
-                                onMouseDown={(event) => event.stopPropagation()}
-                                onClick={() => applySize(resolution, item.value)}
-                            >
+                            <ToggleGroupItem key={item.value} value={item.value} className="h-[72px] flex-col gap-1.5 px-1.5" onMouseDown={(event) => event.stopPropagation()}>
                                 <SizePreview width={item.width} height={item.height} color={theme.node.text} />
                                 <span>{item.value === "auto" ? t("settingsPanels.common.auto") : item.value}</span>
-                            </button>
+                            </ToggleGroupItem>
                         ))}
-                    </div>
+                    </ToggleGroup>
                 </SettingGroup>
                 <SettingGroup title={t("settingsPanels.video.seconds")} color={theme.node.muted}>
                     <div className="flex items-center gap-3" onMouseDown={(event) => event.stopPropagation()}>
-                        <Slider className="min-w-0 flex-1" min={VIDEO_SECONDS_MIN} max={VIDEO_SECONDS_MAX} step={1} value={seconds} onChange={(value) => onConfigChange("videoSeconds", String(Array.isArray(value) ? value[0] : value))} />
+                        <Slider aria-label={t("settingsPanels.video.seconds")} className="min-w-0 flex-1" min={VIDEO_SECONDS_MIN} max={VIDEO_SECONDS_MAX} step={1} value={[seconds]} onValueChange={([value]) => onConfigChange("videoSeconds", String(value))} />
                         <SecondsInput value={seconds} theme={theme} onCommit={(value) => onConfigChange("videoSeconds", String(value))} />
                         <span className="shrink-0 text-sm" style={{ color: theme.node.muted }}>s</span>
                     </div>
                 </SettingGroup>
                 <SettingGroup title={t("settingsPanels.video.mode")} color={theme.node.muted}>
-                    <div className="grid grid-cols-2 gap-2.5">
-                        {videoModeOptions.map((item) => (
-                            <OptionPill key={item.value} selected={videoMode === item.value} theme={theme} onClick={() => onConfigChange("videoMode", item.value)}>
-                                {t(`settingsPanels.video.modes.${item.labelKey}`)}
-                            </OptionPill>
-                        ))}
-                    </div>
+                    <ToggleGroup type="single" value={videoMode} onValueChange={(value) => { if (value) onConfigChange("videoMode", value); }} variant="outline" size="sm" className="grid w-full grid-cols-2 gap-2.5" aria-label={t("settingsPanels.video.mode")}>
+                        {videoModeOptions.map((item) => <ToggleGroupItem key={item.value} value={item.value} className="h-9 justify-center">{t(`settingsPanels.video.modes.${item.labelKey}`)}</ToggleGroupItem>)}
+                    </ToggleGroup>
                 </SettingGroup>
             </div>
         </ImageSettingsTheme>
@@ -143,18 +132,10 @@ function updateDimension(key: "width" | "height", value: number | null, dimensio
     onConfigChange("size", `${key === "width" ? next : dimensions.width}x${key === "height" ? next : dimensions.height}`);
 }
 
-function OptionPill({ selected, disabled = false, theme, onClick, children }: { selected: boolean; disabled?: boolean; theme: CanvasTheme; onClick: () => void; children: ReactNode }) {
-    return (
-        <button type="button" disabled={disabled} className="h-9 cursor-pointer rounded-full border px-2 text-sm transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-35" style={{ background: "transparent", borderColor: selected ? theme.node.text : theme.node.stroke, color: theme.node.text }} onMouseDown={(event) => event.stopPropagation()} onClick={onClick}>
-            {children}
-        </button>
-    );
-}
-
 function SettingGroup({ title, color, children }: { title: string; color: string; children: ReactNode }) {
     return (
         <div className="space-y-2.5">
-            <div className="text-xs font-medium" style={{ color }}>
+            <div className="canvas-field-label" style={{ color }}>
                 {title}
             </div>
             {children}
@@ -164,12 +145,10 @@ function SettingGroup({ title, color, children }: { title: string; color: string
 
 function ResolutionInput({ value, theme, onChange }: { value: string; theme: CanvasTheme; onChange: (value: string) => void }) {
     return (
-        <label className="flex h-9 overflow-hidden rounded-full border text-sm" style={{ borderColor: theme.node.stroke, color: theme.node.text }}>
-            <input type="number" min={1} className="min-w-0 flex-1 bg-transparent px-3 text-center outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" value={value} onChange={(event) => onChange(event.target.value)} onMouseDown={(event) => event.stopPropagation()} />
-            <span className="grid w-7 place-items-center pr-1" style={{ color: theme.node.muted }}>
-                p
-            </span>
-        </label>
+        <InputGroup className="h-9 rounded-xl" style={{ borderColor: theme.node.stroke, color: theme.node.text }}>
+            <InputGroupInput aria-label="自定义分辨率" type="number" min={1} className="px-2 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" value={value} onChange={(event) => onChange(event.target.value)} onMouseDown={(event) => event.stopPropagation()} />
+            <InputGroupAddon align="inline-end" className="pr-2"><InputGroupText style={{ color: theme.node.muted }}>p</InputGroupText></InputGroupAddon>
+        </InputGroup>
     );
 }
 
@@ -181,8 +160,9 @@ function SecondsInput({ value, theme, onCommit }: { value: number; theme: Canvas
     };
 
     return (
-        <label className="flex h-9 w-[68px] shrink-0 overflow-hidden rounded-xl text-sm" style={{ background: theme.node.fill, color: theme.node.text }}>
-            <input
+        <InputGroup className="h-9 w-[68px] shrink-0 rounded-xl" style={{ background: theme.node.fill, color: theme.node.text }}>
+            <InputGroupInput
+                aria-label="视频时长（秒）"
                 type="number"
                 min={VIDEO_SECONDS_MIN}
                 max={VIDEO_SECONDS_MAX}
@@ -195,18 +175,16 @@ function SecondsInput({ value, theme, onCommit }: { value: number; theme: Canvas
                 }}
                 onMouseDown={(event) => event.stopPropagation()}
             />
-        </label>
+        </InputGroup>
     );
 }
 
 function DimensionInput({ prefix, value, disabled, theme, onChange }: { prefix: string; value: number; disabled: boolean; theme: CanvasTheme; onChange: (value: number | null) => void }) {
     return (
-        <label className="flex h-9 overflow-hidden rounded-xl text-sm" style={{ background: theme.node.fill, color: theme.node.text, opacity: disabled ? 0.55 : 1 }}>
-            <span className="grid w-9 place-items-center" style={{ color: theme.node.muted }}>
-                {prefix}
-            </span>
-            <input type="number" min={1} disabled={disabled} className="min-w-0 flex-1 bg-transparent px-2 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" value={value || ""} onChange={(event) => onChange(Number(event.target.value) || null)} onMouseDown={(event) => event.stopPropagation()} />
-        </label>
+        <InputGroup className="h-9 rounded-xl" style={{ background: theme.node.fill, color: theme.node.text, opacity: disabled ? 0.55 : 1 }}>
+            <InputGroupAddon><InputGroupText style={{ color: theme.node.muted }}>{prefix}</InputGroupText></InputGroupAddon>
+            <InputGroupInput aria-label={prefix === "W" ? "视频宽度" : "视频高度"} type="number" min={1} disabled={disabled} className="px-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" value={value || ""} onChange={(event) => onChange(Number(event.target.value) || null)} onMouseDown={(event) => event.stopPropagation()} />
+        </InputGroup>
     );
 }
 

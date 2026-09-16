@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { ConfigProvider, Switch } from "antd";
+import { ConfigProvider, Switch } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
 
 import i18n from "@/i18n";
@@ -246,7 +246,7 @@ function AspectIcon({ width, height, color }: { width: number; height: number; c
 
 function SettingTitle({ children, color }: { children: string; color: string }) {
     return (
-        <div className="text-xs font-medium" style={{ color }}>
+        <div className="canvas-field-label" style={{ color }}>
             {children}
         </div>
     );

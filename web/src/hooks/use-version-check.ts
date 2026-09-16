@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { App } from "antd";
+import { App } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
-import { APP_VERSION } from "@/constant/env";
+import { APP_VERSION, LATEST_CHANGELOG_URL, LATEST_VERSION_URL } from "@/constant/env";
 import { parseChangelog, type ReleaseInfo } from "@/lib/release";
-
-const latestVersionUrl = "https://raw.githubusercontent.com/basketikun/infinite-canvas/main/VERSION";
-const latestChangelogUrl = "https://raw.githubusercontent.com/basketikun/infinite-canvas/main/CHANGELOG.md";
 
 function readLocalReleases(): ReleaseInfo[] {
     return __APP_RELEASES__ || [];
@@ -35,8 +32,9 @@ export function useVersionCheck() {
     const hasNewVersion = isNewerVersion(latestVersion, currentVersion);
 
     const checkLatestVersion = useCallback(async () => {
+        if (!LATEST_VERSION_URL) return false;
         try {
-            const response = await fetch(latestVersionUrl);
+            const response = await fetch(LATEST_VERSION_URL);
             if (!response.ok) return false;
             const version = await response.text();
             setLatestVersion(version.trim() || currentVersion);
@@ -49,8 +47,14 @@ export function useVersionCheck() {
     const checkLatestRelease = useCallback(
         async (showMessage = false) => {
             setChecking(true);
+            if (!LATEST_VERSION_URL || !LATEST_CHANGELOG_URL) {
+                setLatestVersion(currentVersion);
+                setReleases(localReleases);
+                setChecking(false);
+                return true;
+            }
             try {
-                const [versionResponse, changelogResponse] = await Promise.all([fetch(latestVersionUrl), fetch(latestChangelogUrl)]);
+                const [versionResponse, changelogResponse] = await Promise.all([fetch(LATEST_VERSION_URL), fetch(LATEST_CHANGELOG_URL)]);
                 if (!versionResponse.ok) throw new Error(t("version.readFailed"));
                 if (!changelogResponse.ok) throw new Error(t("version.changelogFailed"));
                 const [version, changelog] = await Promise.all([versionResponse.text(), changelogResponse.text()]);

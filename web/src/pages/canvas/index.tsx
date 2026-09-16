@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { App, Button } from "antd";
+import { App, Button } from "@/components/ui/heroui-compat";
 import { Download, FileUp, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { readZip } from "@/lib/zip";
+import { StudioEmptyState, StudioPageHeader } from "@/components/studio/studio-primitives";
 import { setMediaBlob } from "@/services/file-storage";
 import { setImageBlob } from "@/services/image-storage";
 import { CanvasDeleteProjectsDialog } from "@/components/canvas/canvas-delete-projects-dialog";
@@ -69,17 +70,19 @@ export default function CanvasPage() {
         enterProject(mode === "new" ? createProject(t("canvas.defaultTitle", { count: projects.length + 1 })) : projects[0]?.id || createProject(t("canvas.defaultTitle", { count: projects.length + 1 })));
     }, [createProject, hydrated, mode, projects, t]);
 
-    if (hydrated && (mode === "new" || mode === "recent")) return <main className="flex h-full items-center justify-center bg-background text-sm text-stone-500">{t("canvas.opening")}</main>;
+    if (hydrated && (mode === "new" || mode === "recent")) return <main className="studio-page studio-loading flex h-full items-center justify-center text-sm text-[var(--studio-muted)]">{t("canvas.opening")}</main>;
 
     return (
-        <main className="h-full overflow-auto bg-background text-stone-950 dark:text-stone-100">
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10">
-                <header className="flex flex-wrap items-end justify-between gap-4 border-b border-stone-200 pb-6 dark:border-stone-800">
-                    <div>
-                        <p className="text-xs text-stone-500">{t("canvas.library")}</p>
-                        <h1 className="mt-3 text-3xl font-semibold">{t("canvas.title")}</h1>
-                    </div>
-                    <div className="flex items-center gap-2">
+        <main className="studio-page h-full overflow-auto">
+            <div className="studio-container">
+                <StudioPageHeader
+                    title={t("canvas.projects")}
+                    icon={FileUp}
+                    meta={t("canvas.library")}
+                />
+
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         {selectedIds.length ? (
                             <>
                                 <Button disabled={!hydrated} icon={<Download className="size-4" />} onClick={() => void exportCanvasProjects(projects.filter((project) => selectedIds.includes(project.id)), `${t("canvas.title")}-${selectedIds.length}`)}>
@@ -90,36 +93,29 @@ export default function CanvasPage() {
                                 </Button>
                             </>
                         ) : null}
-                        {projects.length ? (
-                            <Button disabled={!hydrated} onClick={() => setDeleteIds(projects.map((project) => project.id))}>
-                                {t("canvas.deleteAll")}
-                            </Button>
-                        ) : null}
-                        <Button disabled={!hydrated} icon={<FileUp className="size-4" />} onClick={() => inputRef.current?.click()}>
-                            {t("canvas.import")}
-                        </Button>
-                        <Button disabled={!hydrated} type="primary" icon={<Plus className="size-4" />} onClick={createAndEnter}>
-                            {t("canvas.create")}
-                        </Button>
                     </div>
-                </header>
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                        {projects.length ? <Button disabled={!hydrated} onClick={() => setDeleteIds(projects.map((project) => project.id))}>{t("canvas.deleteAll")}</Button> : null}
+                        <Button disabled={!hydrated} icon={<FileUp className="size-4" />} onClick={() => inputRef.current?.click()}>{t("canvas.import")}</Button>
+                        <Button disabled={!hydrated} type="primary" icon={<Plus className="size-4" />} onClick={createAndEnter}>{t("canvas.create")}</Button>
+                    </div>
+                </div>
 
                 {!hydrated ? (
-                    <section className="flex min-h-[360px] items-center justify-center border-y border-stone-200 text-sm text-stone-500 dark:border-stone-800">{t("canvas.loading")}</section>
+                    <div className="studio-loading flex min-h-60 items-center justify-center text-sm text-[var(--studio-muted)]">{t("canvas.loading")}</div>
                 ) : projects.length ? (
-                    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {projects.map((project) => (
                             <CanvasProjectCard key={project.id} project={project} />
                         ))}
                     </div>
                 ) : (
-                    <section className="flex min-h-[360px] flex-col items-center justify-center border-y border-stone-200 text-center dark:border-stone-800">
-                        <h2 className="text-xl font-medium">{t("canvas.empty")}</h2>
-                        <p className="mt-3 text-sm text-stone-500">{t("canvas.emptyDescription")}</p>
-                        <Button type="primary" className="mt-6" icon={<Plus className="size-4" />} onClick={createAndEnter}>
+                    <StudioEmptyState title={t("canvas.empty")} icon={Plus}>
+                        <span>{t("canvas.emptyDescription")}</span>
+                        <Button type="primary" icon={<Plus className="size-4" />} onClick={createAndEnter}>
                             {t("canvas.create")}
                         </Button>
-                    </section>
+                    </StudioEmptyState>
                 )}
             </div>
 

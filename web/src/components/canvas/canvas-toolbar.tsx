@@ -1,6 +1,6 @@
 import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Button, Segmented, Switch } from "antd";
+import { Button, Segmented, Switch } from "@/components/ui/heroui-compat";
 import { CircleDot, Eraser, Grid2x2, Group, Hand, Image as ImageIcon, Info, Moon, MousePointer2, Music2, Palette, Puzzle, Redo2, Settings2, Square, Sun, Trash2, Type, Undo2, Upload, Video } from "lucide-react";
 
 import { canvasThemes, type CanvasBackgroundMode, type CanvasColorTheme, type CanvasTheme } from "@/lib/canvas-theme";
@@ -224,7 +224,7 @@ export function CanvasToolbar({
                     </div>
                     <div className="mt-3 px-1 pb-1.5 text-[11px] font-medium opacity-50">{t("canvas.toolbar.gridStyle")}</div>
                     <Segmented
-                        className="w-full !p-1 [&_.ant-segmented-group]:!flex [&_.ant-segmented-item]:!min-h-8 [&_.ant-segmented-item]:!flex-1 [&_.ant-segmented-item-label]:!min-h-8 [&_.ant-segmented-item-label]:!leading-8"
+                        className="w-full !p-1 [&>button]:!min-h-8 [&>button]:!flex-1"
                         value={backgroundMode}
                         onChange={(value) => onBackgroundModeChange(value as CanvasBackgroundMode)}
                         options={[

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Modal, Segmented, Slider } from "antd";
+import { Button, Modal, Segmented, Slider } from "@/components/ui/heroui-compat";
 import { RotateCcw, WandSparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

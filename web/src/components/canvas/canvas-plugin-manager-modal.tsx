@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { App, Button, Input, Modal, Popconfirm, Switch, Tabs } from "antd";
+import { App, Button, Input, Modal, Popconfirm, Switch, Tabs } from "@/components/ui/heroui-compat";
 import { AlertTriangle, Download, Puzzle, RefreshCw, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

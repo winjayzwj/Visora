@@ -1,0 +1,28 @@
+{
+  "name": "visora",
+  "version": "0.1.0",
+  "description": "Use Codex to read and operate Visora AI through the local Visora Canvas Agent MCP server.",
+  "author": {
+    "name": "Visora"
+  },
+  "license": "AGPL-3.0",
+  "keywords": ["visora", "canvas", "mcp", "agent"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Visora AI",
+    "shortDescription": "Use Codex to operate the current Visora AI canvas.",
+    "longDescription": "Connects Codex to the local Visora AI Canvas Agent MCP server so Codex can inspect the current Visora AI canvas, create nodes, connect flows, and trigger generation through the web canvas confirmation flow.",
+    "developerName": "Visora",
+    "category": "Productivity",
+    "capabilities": ["Canvas", "MCP", "Creative Workflow"],
+    "defaultPrompt": [
+      "打开 Visora AI",
+      "读取当前画布并总结节点结构",
+      "根据选中节点创建一组生图提示词"
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/icon.svg",
+    "logo": "./assets/icon.svg"
+  }
+}

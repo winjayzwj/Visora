@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Button, Modal, Segmented, Tooltip } from "antd";
+import { Button, Modal, Segmented, Tooltip } from "@/components/ui/heroui-compat";
 import { Check, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

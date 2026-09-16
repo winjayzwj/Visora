@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Select } from "antd";
+import { Select } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
@@ -29,7 +29,7 @@ export function CanvasSizePicker({ value, className, onChange }: CanvasSizePicke
         if (!open) return;
         const close = (event: PointerEvent) => {
             const target = event.target instanceof Element ? event.target : null;
-            if (target && (rootRef.current?.contains(target) || target.closest(".ant-select-dropdown"))) return;
+            if (target && rootRef.current?.contains(target)) return;
             setOpen(false);
         };
         window.addEventListener("pointerdown", close, true);

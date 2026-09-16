@@ -86,7 +86,7 @@ test("oversized image previews are rejected instead of silently dropped", async 
 });
 
 async function createFixture(context: TestContext, initialize = true) {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "canvas-agent-message-metadata-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "visora-agent-message-metadata-"));
     context.after(() => fs.rm(root, { recursive: true, force: true }));
     const storeDirectory = path.join(root, "message-metadata");
     const createStore = () => new MessageMetadataStore(storeDirectory);

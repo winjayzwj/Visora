@@ -70,11 +70,10 @@ export type ChannelCredentialsImportResult = {
     channelName?: string;
 };
 
-export const CONFIG_STORE_KEY = "infinite-canvas:ai_config_store";
+export const CONFIG_STORE_KEY = "visora:ai_config_store";
 const CHANNEL_MODEL_SEPARATOR = "::";
 const OPENAI_BASE_URL = "https://api.openai.com";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
-export const LOCAL_PROXY_PACKAGE = "@basketikun/canvas-proxy";
 export const DEFAULT_LOCAL_PROXY_URL = "http://127.0.0.1:23210";
 
 export const defaultConfig: AiConfig = {
@@ -127,7 +126,7 @@ export const defaultWebdavSyncConfig: WebdavSyncConfig = {
     url: "",
     username: "",
     password: "",
-    directory: "infinite-canvas",
+    directory: "visora",
     lastSyncedAt: "",
 };
 

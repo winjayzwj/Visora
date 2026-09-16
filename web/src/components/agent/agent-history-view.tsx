@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Checkbox } from "antd";
+import { Button, Checkbox } from "@/components/ui/heroui-compat";
 import { FolderOpen, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

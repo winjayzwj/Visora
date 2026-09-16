@@ -1,4 +1,4 @@
-import { App, Button, Empty, Modal, Space, Table, Tag } from "antd";
+import { App, Button, Empty, Modal, Space, Table, Tag } from "@/components/ui/heroui-compat";
 import { Copy, FolderPlus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

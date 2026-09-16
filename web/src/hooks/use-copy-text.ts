@@ -1,4 +1,4 @@
-import { App } from "antd";
+import { App } from "@/components/ui/heroui-compat";
 import copy from "copy-to-clipboard";
 import { useTranslation } from "react-i18next";
 

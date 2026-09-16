@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Modal, Segmented } from "antd";
+import { Button, Modal, Segmented } from "@/components/ui/heroui-compat";
 import { ImagePlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

@@ -1,4 +1,4 @@
-import { Button, Tooltip } from "antd";
+import { Button, Tooltip } from "@/components/ui/heroui-compat";
 import { ChevronDown } from "lucide-react";
 
 import { canvasThemes } from "@/lib/canvas-theme";

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Settings2 } from "lucide-react";
-import { Button } from "antd";
+import { Button } from "@/components/ui/heroui-compat";
 
 import { AudioSettingsPanel } from "@/components/audio-settings-panel";
 import { audioFormatLabel, audioSpeedLabel, audioVoiceLabel } from "@/lib/audio-generation";
