@@ -2,31 +2,45 @@
     min-height: 36px;
     flex-direction: row;
     align-items: center;
-    padding-inline-end: 44px;
+    padding-inline-end: 40px;
 }
 
 .visora-overlay-close {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 12px;
+    right: 12px;
     z-index: 1;
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
     padding: 0;
-    color: var(--foreground);
+    color: var(--muted);
 }
 
 .visora-overlay-close:focus-visible {
+    color: var(--foreground);
     outline: 2px solid var(--focus);
     outline-offset: 2px;
 }
 
-/* 轻量操作统一使用主题前景色：浅色为接近黑色，深色仍保持可读。 */
+.visora-overlay-close:hover {
+    color: var(--foreground);
+}
+
+/* 中性操作与导航保持相同的低强调灰；交互或选中时才使用前景色。 */
 .visora-default-button,
 .button--secondary,
 .button--tertiary,
 .button--ghost,
 .button--outline {
+    --button-fg: var(--muted);
+}
+
+.visora-default-button:is(:hover, :focus-visible, [data-pressed="true"], [aria-pressed="true"], [aria-current="page"], [data-selected="true"]),
+.button--secondary:is(:hover, :focus-visible, [data-pressed="true"], [aria-pressed="true"], [aria-current="page"], [data-selected="true"]),
+.button--tertiary:is(:hover, :focus-visible, [data-pressed="true"], [aria-pressed="true"], [aria-current="page"], [data-selected="true"]),
+.button--ghost:is(:hover, :focus-visible, [data-pressed="true"], [aria-pressed="true"], [aria-current="page"], [data-selected="true"]),
+.button--outline:is(:hover, :focus-visible, [data-pressed="true"], [aria-pressed="true"], [aria-current="page"], [data-selected="true"]) {
     --button-fg: var(--foreground);
 }

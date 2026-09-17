@@ -1,5 +1,5 @@
-import { Button, Drawer, Dropdown, Segmented } from "./ui/heroui-compat";
-import { ChevronDown, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun, UserRound } from "lucide-react";
+import { Button, Drawer, Dropdown } from "./ui/heroui-compat";
+import { ChevronDown, LogOut, Menu, Monitor, Moon, PanelLeftClose, PanelLeftOpen, Sun, UserRound } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState, type PropsWithChildren } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -25,18 +25,30 @@ function useNarrow() {
 }
 
 function ThemeSwitcher({ mode, onModeChange }: { mode: ThemeMode; onModeChange: (mode: ThemeMode) => void }) {
+    const items = [
+        { mode: "light" as const, label: "浅色模式", icon: Sun },
+        { mode: "dark" as const, label: "深色模式", icon: Moon },
+        { mode: "system" as const, label: "跟随系统", icon: Monitor },
+    ];
+
     return (
-        <Segmented
-            aria-label="主题模式"
-            className="theme-switcher"
-            options={[
-                { label: "跟随系统", value: "system" },
-                { label: <Sun size={14} aria-label="浅色" />, value: "light" },
-                { label: <Moon size={14} aria-label="深色" />, value: "dark" },
-            ]}
-            value={mode}
-            onChange={(value) => onModeChange(value as ThemeMode)}
-        />
+        <div aria-label="主题模式" className="theme-switcher" role="group">
+            {items.map(({ mode: value, label, icon: Icon }) => (
+                <Button
+                    aria-label={label}
+                    className="theme-switcher-button"
+                    data-selected={mode === value}
+                    isIconOnly
+                    key={value}
+                    size="sm"
+                    variant={mode === value ? "secondary" : "tertiary"}
+                    aria-pressed={mode === value}
+                    onPress={() => onModeChange(value)}
+                >
+                    <Icon aria-hidden="true" size={15} />
+                </Button>
+            ))}
+        </div>
     );
 }
 

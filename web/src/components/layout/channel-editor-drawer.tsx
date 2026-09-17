@@ -1,4 +1,4 @@
-import { Button, Drawer, Input, Segmented, Select, Space } from "@/components/ui/heroui-compat";
+import { Button, Input, Modal, Segmented, Select } from "@/components/ui/heroui-compat";
 import { ListPlus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -49,22 +49,24 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
     };
 
     return (
-        <Drawer
+        <Modal
             open={open}
-            width={640}
+            width={880}
+            centered
             title={t("config.channelEditor.title")}
-            onClose={onClose}
-            styles={{ body: { paddingTop: 16 } }}
-            extra={
-                <Space>
+            onCancel={onClose}
+            className="config-modal channel-editor-modal"
+            styles={{ body: { maxHeight: "68vh", overflowY: "auto", paddingRight: 8 } }}
+            footer={
+                <>
                     <Button onClick={onClose}>{t("common.cancel")}</Button>
                     <Button type="primary" onClick={save}>
                         {t("common.save")}
                     </Button>
-                </Space>
+                </>
             }
         >
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2">
                 <label className="block">
                     <span className="mb-1 block text-sm font-medium">{t("config.channelEditor.name")}</span>
                     <Input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
@@ -83,7 +85,7 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
                 </label>
             </div>
 
-            <div className="mt-6 mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="mt-4 mb-2 flex flex-wrap items-center justify-between gap-2">
                 <div>
                     <div className="text-sm font-semibold">{t("config.channelEditor.models")}</div>
                     <div className="mt-0.5 text-xs text-stone-500">{t("config.channelEditor.modelDescription", { count: draft.models.length })}</div>
@@ -93,14 +95,14 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
                 </Button>
             </div>
 
-            <div className="space-y-2 rounded-lg border border-stone-200 p-2 dark:border-stone-800">
+            <div className="space-y-1.5 rounded-lg border border-stone-200 p-1.5 dark:border-stone-800">
                 {draft.models.length ? (
                     draft.models.map((model) => (
-                        <div key={model.name} className="flex flex-wrap items-center gap-3 rounded-md px-2 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-900/40">
+                        <div key={model.name} className="flex flex-wrap items-center gap-2 rounded-md px-2 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-900/40">
                             <span className="min-w-0 flex-1 truncate text-sm" title={model.name}>
                                 {model.name}
                             </span>
-                            <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-1.5">
                                 <Segmented size="small" value={model.capability} options={capabilityOptions} onChange={(value) => setCapability(model.name, value as ModelCapability)} />
                                 <Button size="small" type={model.script ? "primary" : "default"} ghost={Boolean(model.script)} onClick={() => setScriptTarget({ name: model.name, capability: model.capability, value: model.script || "" })}>
                                     {t(model.script ? "config.channelEditor.scriptReady" : "config.channelEditor.script")}
@@ -124,6 +126,6 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
                 onSave={(script) => scriptTarget && setScript(scriptTarget.name, script)}
                 onClose={() => setScriptTarget(null)}
             />
-        </Drawer>
+        </Modal>
     );
 }

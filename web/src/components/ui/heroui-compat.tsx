@@ -306,7 +306,7 @@ export function Drawer({ open, onClose, title, children, placement = "right", wi
 export function Select({ options = [], value, defaultValue, onChange, mode, placeholder, className, disabled, ...props }: AnyProps) {
     const values = Array.isArray(value) ? value : undefined;
     return (
-        <span className={cn("relative inline-flex min-h-9 min-w-24 items-center rounded-lg border border-border bg-field-background", className)}>
+        <span className={cn("relative inline-flex min-h-6 min-w-24 items-center rounded-lg border border-border bg-field-background", className)}>
             <select
                 {...props}
                 disabled={disabled}
@@ -314,7 +314,7 @@ export function Select({ options = [], value, defaultValue, onChange, mode, plac
                 value={values || (value ?? "")}
                 defaultValue={defaultValue}
                 onChange={(event) => onChange?.(mode === "multiple" || mode === "tags" ? Array.from(event.target.selectedOptions, (option) => option.value) : event.target.value)}
-                className="h-9 w-full appearance-none bg-transparent px-3 pr-8 text-sm outline-none"
+                className="h-6 w-full appearance-none bg-transparent px-2 pr-6 text-[11px] outline-none"
             >
                 <option value="" disabled>
                     {placeholder || "请选择"}
@@ -325,7 +325,7 @@ export function Select({ options = [], value, defaultValue, onChange, mode, plac
                     </option>
                 ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 size-4 text-muted" />
+            <ChevronDown className="pointer-events-none absolute right-1.5 size-3 text-muted" />
         </span>
     );
 }

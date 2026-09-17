@@ -52,7 +52,7 @@ export function ModelScriptEditor({ open, capability, modelName, value, onSave, 
             width="100vw"
             centered={false}
             onCancel={onClose}
-            className="h-dvh max-w-none rounded-none"
+            className="config-modal h-dvh max-w-none rounded-none"
             styles={{
                 wrapper: { overflow: "hidden" },
                 content: { height: "100dvh", maxHeight: "100dvh", margin: 0, padding: 0, borderRadius: 0, overflow: "hidden" },

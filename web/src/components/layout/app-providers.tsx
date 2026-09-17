@@ -24,6 +24,8 @@ const queryClient = new QueryClient({
 export function AppProviders({ children }: { children: ReactNode }) {
     const { i18n, t } = useTranslation();
     const theme = useThemeStore((state) => state.theme);
+    const preference = useThemeStore((state) => state.preference);
+    const setResolvedTheme = useThemeStore((state) => state.setResolvedTheme);
     const dark = theme === "dark";
     const locale = i18n.resolvedLanguage as AppLocale;
 
@@ -33,6 +35,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
         document.documentElement.setAttribute("data-theme", theme);
         document.documentElement.style.colorScheme = theme;
     }, [dark, theme]);
+
+    useEffect(() => {
+        if (preference !== "system") return;
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+        const sync = () => setResolvedTheme(media.matches ? "dark" : "light");
+        sync();
+        media.addEventListener("change", sync);
+        return () => media.removeEventListener("change", sync);
+    }, [preference, setResolvedTheme]);
 
     useEffect(() => {
         document.documentElement.lang = locale;

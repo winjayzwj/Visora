@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent as ReactChangeEvent, DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Group, Video } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { BookOpen, FolderPlus, Group, Video } from "lucide-react";
+import { Breadcrumbs, Button as HeroButton, ButtonGroup } from "@heroui/react";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 
@@ -42,7 +43,7 @@ import { CanvasToolbar } from "@/components/canvas/canvas-toolbar";
 import { AssetPickerModal, type InsertAssetPayload } from "@/components/canvas/asset-picker-modal";
 import { CanvasSidePanel } from "@/components/canvas/canvas-side-panel";
 import { CanvasZoomControls } from "@/components/canvas/canvas-zoom-controls";
-import { useAgentStore } from "@/stores/use-agent-store";
+import { PromptSelectDialog } from "@/components/prompts/prompt-select-dialog";
 import { useCanvasStore } from "@/stores/canvas/use-canvas-store";
 import { useAgentBridge } from "@/pages/canvas/hooks/use-agent-bridge";
 import { usePluginHost } from "@/pages/canvas/hooks/use-plugin-host";
@@ -162,15 +163,7 @@ function VisoraCanvasPage() {
     const nodeRegistryVersion = useNodeRegistryVersion((state) => state.version);
     const params = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const projectId = params.id || "";
-    const localAgentConnected = useAgentStore((state) => state.connected);
-    const localAgentActivity = useAgentStore((state) => state.activity);
-    const localAgentEnabled = useAgentStore((state) => state.enabled);
-    const fragmentBootstrap = useAgentStore((state) => state.fragmentBootstrap);
-    const agentPanelOpen = useAgentStore((state) => state.panelOpen);
-    const toggleAgentPanel = useAgentStore((state) => state.togglePanel);
-    const openAgentPanel = useAgentStore((state) => state.openPanel);
     const containerRef = useRef<HTMLDivElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const uploadTargetRef = useRef<{ nodeId?: string; position?: Position } | null>(null);
@@ -235,6 +228,7 @@ function VisoraCanvasPage() {
     const [showImageInfo, setShowImageInfo] = useState(false);
     const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
     const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+    const [promptDialogOpen, setPromptDialogOpen] = useState(false);
     const [projectLoaded, setProjectLoaded] = useState(false);
     const [toolbarNodeId, setToolbarNodeId] = useState<string | null>(null);
     const [nodeImageSettingsOpen, setNodeImageSettingsOpen] = useState(false);
@@ -467,11 +461,6 @@ function VisoraCanvasPage() {
         // Resume once after the current canvas is restored, not on later config identity changes.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectLoaded]);
-
-    useEffect(() => {
-        if (!projectLoaded || !["new", "recent", "choose"].includes(searchParams.get("mode") || "")) return;
-        if (!searchParams.has("agentUrl") && !localAgentEnabled && !fragmentBootstrap) openAgentPanel();
-    }, [fragmentBootstrap, localAgentEnabled, openAgentPanel, projectLoaded, searchParams]);
 
     useEffect(() => {
         if (!projectLoaded || applyingHistoryRef.current || historyPausedRef.current) return;
@@ -3078,17 +3067,57 @@ function VisoraCanvasPage() {
     if (!projectLoaded) return <CanvasRefreshShell />;
 
     return (
-        <main className="flex h-full min-h-0 overflow-hidden" style={{ background: theme.canvas.background, color: theme.node.text }}>
-            <CanvasSidePanel nodes={nodes} selectedNodeIds={selectedNodeIds} onFocusNode={focusNode} onPreviewNode={setPreviewNodeId} onInsertAsset={handleAssetInsert} />
-            <section className="relative min-w-0 flex-1 overflow-hidden">
+        <main className="studio-page h-full overflow-auto">
+            <div className="studio-container flex h-full min-h-0 flex-col">
+                <header className="studio-page-header">
+                    <h1 className="sr-only">{currentProject?.title || t("canvas.projectPage.untitledCanvas")}</h1>
+                    <Breadcrumbs className="studio-page-breadcrumbs" aria-label={`${t("canvas.projects")} · ${currentProject?.title || t("canvas.projectPage.untitledCanvas")}`}>
+                        <Breadcrumbs.Item href="/">{t("studio.home")}</Breadcrumbs.Item>
+                        <Breadcrumbs.Item href="/canvas">
+                            <span className="flex items-center gap-2"><Group className="size-4" strokeWidth={1.75} aria-hidden="true" />{t("canvas.projects")}</span>
+                        </Breadcrumbs.Item>
+                        <Breadcrumbs.Item>
+                            <div className="min-w-0">
+                                {titleEditing ? (
+                                    <input
+                                        autoFocus
+                                        value={titleDraft}
+                                        onChange={(event) => setTitleDraft(event.target.value)}
+                                        onBlur={finishTitleEditing}
+                                        onKeyDown={(event) => {
+                                            if (event.key === "Enter") finishTitleEditing();
+                                            if (event.key === "Escape") setTitleEditing(false);
+                                        }}
+                                        className="max-w-[220px] bg-transparent p-0 text-left text-sm font-semibold tracking-normal outline-none"
+                                    />
+                                ) : (
+                                    <button type="button" className="max-w-[220px] truncate border-b border-dashed border-transparent text-left text-sm font-semibold tracking-normal transition hover:border-current" onDoubleClick={startTitleEditing} title={t("canvas.renameHint")}>
+                                        {currentProject?.title || t("canvas.projectPage.untitledCanvas")}
+                                    </button>
+                                )}
+                            </div>
+                        </Breadcrumbs.Item>
+                    </Breadcrumbs>
+                    <div className="studio-page-header-context">
+                        <div className="studio-page-header-meta">{t("canvas.library")}</div>
+                        <ButtonGroup variant="tertiary" size="sm" aria-label={t("studio.resources")}>
+                            <HeroButton onPress={() => setPromptDialogOpen(true)}>
+                                <BookOpen className="size-3.5" />
+                                {t("studio.promptLibrary")}
+                            </HeroButton>
+                            <HeroButton onPress={() => setAssetPickerOpen(true)}>
+                                <ButtonGroup.Separator />
+                                <FolderPlus className="size-3.5" />
+                                {t("studio.myAssets")}
+                            </HeroButton>
+                        </ButtonGroup>
+                    </div>
+                </header>
+                <section className="relative min-h-0 flex-1 overflow-hidden rounded-[var(--studio-surface-radius)] border" style={{ background: theme.canvas.background, borderColor: theme.toolbar.border, color: theme.node.text }}>
+                    <div className="flex h-full min-h-0">
+                        <CanvasSidePanel nodes={nodes} selectedNodeIds={selectedNodeIds} onFocusNode={focusNode} onPreviewNode={setPreviewNodeId} />
+                        <section className="relative min-w-0 flex-1 overflow-hidden">
                 <CanvasTopBar
-                    title={currentProject?.title || t("canvas.projectPage.untitledCanvas")}
-                    titleDraft={titleDraft}
-                    isTitleEditing={titleEditing}
-                    onTitleDraftChange={setTitleDraft}
-                    onStartTitleEditing={startTitleEditing}
-                    onFinishTitleEditing={finishTitleEditing}
-                    onCancelTitleEditing={() => setTitleEditing(false)}
                     canUndo={historyState.canUndo}
                     canRedo={historyState.canRedo}
                     onHome={() => navigate("/")}
@@ -3100,9 +3129,6 @@ function VisoraCanvasPage() {
                     onOpenPlugins={() => setPluginManagerOpen(true)}
                     onUndo={undoCanvas}
                     onRedo={redoCanvas}
-                    agentOpen={agentPanelOpen}
-                    compactAgentStatus={{ connected: localAgentConnected, enabled: localAgentEnabled, activity: localAgentActivity }}
-                    onToggleAgent={toggleAgentPanel}
                 />
 
                 <VisoraCanvas
@@ -3378,7 +3404,11 @@ function VisoraCanvasPage() {
                 </Modal>
 
                 <AssetPickerModal open={assetPickerOpen} onInsert={handleAssetInsert} onClose={() => setAssetPickerOpen(false)} />
-            </section>
+                <PromptSelectDialog open={promptDialogOpen} onOpenChange={setPromptDialogOpen} onSelect={(prompt) => insertAssistantText(prompt)} />
+                        </section>
+                    </div>
+                </section>
+            </div>
         </main>
     );
 }

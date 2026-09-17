@@ -28,6 +28,8 @@ type MongoStore struct {
 type mongoUser struct {
 	ID             bson.ObjectID `bson:"_id"`
 	Email          string        `bson:"email"`
+	Name           string        `bson:"name"`
+	AvatarURL      string        `bson:"avatarUrl"`
 	PasswordHash   []byte        `bson:"passwordHash"`
 	Role           string        `bson:"role"`
 	Status         string        `bson:"status"`
@@ -179,6 +181,21 @@ func (store *MongoStore) CreateUser(ctx context.Context, input CreateUserInput) 
 		return User{}, err
 	}
 	return document.user(), nil
+}
+
+func (store *MongoStore) UpdateUserProfile(ctx context.Context, input UpdateUserProfileInput) (User, error) {
+	objectID, err := bson.ObjectIDFromHex(input.UserID)
+	if err != nil {
+		return User{}, ErrNotFound
+	}
+	result, err := store.users.UpdateOne(ctx, bson.D{{Key: "_id", Value: objectID}}, bson.D{{Key: "$set", Value: bson.D{{Key: "name", Value: input.Name}, {Key: "avatarUrl", Value: input.AvatarURL}}}})
+	if err != nil {
+		return User{}, err
+	}
+	if result.MatchedCount == 0 {
+		return User{}, ErrNotFound
+	}
+	return store.FindUserByID(ctx, input.UserID)
 }
 
 func (store *MongoStore) SetUserStatus(ctx context.Context, input SetUserStatusInput) (User, error) {
@@ -377,6 +394,8 @@ func (document mongoUser) user() User {
 	return User{
 		ID:             document.ID.Hex(),
 		Email:          document.Email,
+		Name:           document.Name,
+		AvatarURL:      document.AvatarURL,
 		Role:           document.Role,
 		Status:         document.Status,
 		Points:         document.Points,

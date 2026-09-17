@@ -38,7 +38,7 @@ export function ModelPicker({ config, value, onChange, capability, className, fu
         >
             <Select.Trigger
                 className={cn(
-                    "h-10 w-full max-w-full gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-normal text-foreground shadow-xs transition-colors hover:bg-surface-secondary",
+                    "h-6 w-full max-w-full gap-1 rounded-lg border border-border bg-surface px-2 text-[11px] font-normal text-foreground shadow-xs transition-colors hover:bg-surface-secondary",
                     fullWidth ? "w-full min-w-0 justify-start" : "min-w-[9rem] justify-start",
                     "data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-focus/40",
                 )}

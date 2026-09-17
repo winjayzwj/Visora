@@ -34,6 +34,12 @@ listening_pids() {
     lsof -nP -tiTCP:"$1" -sTCP:LISTEN 2>/dev/null || true
 }
 
+is_vite_process() {
+    local command
+    command="$(ps -p "$1" -o command= 2>/dev/null || true)"
+    [[ "$command" == *"/node_modules/.bin/vite"* ]]
+}
+
 # 检查的是本机端口，必须绕过环境里的 HTTP_PROXY / HTTPS_PROXY，
 # 否则 curl 会把请求交给代理，代理连不上时返回 502，就绪判断会失真。
 probe() {
@@ -159,10 +165,14 @@ release_port "$ADMIN_PORT"
 for legacy in "${LEGACY_PORTS[@]}"; do
     if [ "$legacy" != "$WEB_PORT" ] && [ "$legacy" != "$ADMIN_PORT" ]; then
         pids="$(listening_pids "$legacy")"
-        if [ -n "$pids" ]; then
-            echo "  端口 ${legacy}：清理旧版 dev server $pids"
-            kill $pids 2>/dev/null || true
-        fi
+        for pid in $pids; do
+            if is_vite_process "$pid"; then
+                echo "  端口 ${legacy}：清理旧版 dev server $pid"
+                kill "$pid" 2>/dev/null || true
+            elif [ -n "$pid" ]; then
+                echo "  端口 ${legacy}：由非 Vite 进程 $pid 占用，保留不动"
+            fi
+        done
     fi
 done
 

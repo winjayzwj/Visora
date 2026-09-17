@@ -64,7 +64,9 @@ export function DataConsole<T extends Record<string, any>>({
             />
 
             <footer className="console-footer">
-                <span>第 {page} 页</span>
+                <span aria-live="polite" className="console-result-meta">
+                    {loading ? "正在加载…" : items.length > 0 ? `本页 ${items.length} 项 · 第 ${page} 页` : "暂无结果"}
+                </span>
                 <div>
                     <Button disabled={loading || page < 2} onClick={goPrevious}>
                         上一页

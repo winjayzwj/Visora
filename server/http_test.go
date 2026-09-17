@@ -89,6 +89,40 @@ func TestInvalidLoginAlwaysComparesBcrypt(t *testing.T) {
 	}
 }
 
+func TestRegisterCreatesAnActiveSessionWithoutEmailVerification(t *testing.T) {
+	handler, _, _, _ := newTestHandler(t)
+	response := apiRequest(handler, http.MethodPost, "/api/auth/register", `{"email":"new.creator@example.test","password":"new-password"}`, nil)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("register status = %d, body = %s", response.Code, response.Body.String())
+	}
+	cookie := responseCookie(t, response, sessionCookieName)
+	if cookie.Value == "" || !cookie.HttpOnly {
+		t.Fatalf("register did not start a safe session: %#v", cookie)
+	}
+	if me := apiRequest(handler, http.MethodGet, "/api/auth/me", "", cookie); me.Code != http.StatusOK {
+		t.Fatalf("registered session is unusable: status=%d body=%s", me.Code, me.Body.String())
+	}
+	assertAPIError(t, apiRequest(handler, http.MethodPost, "/api/auth/register", `{"email":"new.creator@example.test","password":"new-password"}`, nil), http.StatusConflict, "EMAIL_EXISTS")
+	assertAPIError(t, apiRequest(handler, http.MethodPost, "/api/auth/register", `{"email":"invalid-email","password":"new-password"}`, nil), http.StatusBadRequest, "INVALID_INPUT")
+}
+
+func TestProfileUpdateKeepsPointsServerControlled(t *testing.T) {
+	handler, _, _, _ := newTestHandler(t)
+	cookie := login(t, handler, "user@example.test", "user-password")
+	response := apiRequest(handler, http.MethodPatch, "/api/auth/profile", `{"name":"映序创作者","avatarUrl":"https://example.test/avatar.png"}`, cookie)
+	if response.Code != http.StatusOK {
+		t.Fatalf("profile update status = %d, body = %s", response.Code, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), `"name":"映序创作者"`) || !strings.Contains(response.Body.String(), `"avatarUrl":"https://example.test/avatar.png"`) {
+		t.Fatalf("updated profile missing from response: %s", response.Body.String())
+	}
+	me := apiRequest(handler, http.MethodGet, "/api/auth/me", "", cookie)
+	if me.Code != http.StatusOK || !strings.Contains(me.Body.String(), `"name":"映序创作者"`) {
+		t.Fatalf("profile did not persist: status=%d body=%s", me.Code, me.Body.String())
+	}
+	assertAPIError(t, apiRequest(handler, http.MethodPatch, "/api/auth/profile", `{"points":999999}`, cookie), http.StatusBadRequest, "INVALID_INPUT")
+}
+
 func TestDummyPasswordCannotAuthenticate(t *testing.T) {
 	handler, store, _, user := newTestHandler(t)
 	user.Status = StatusDisabled
@@ -510,6 +544,19 @@ func (store *memoryStore) CreateUser(_ context.Context, input CreateUserInput) (
 	return user, nil
 }
 
+func (store *memoryStore) UpdateUserProfile(_ context.Context, input UpdateUserProfileInput) (User, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	user, ok := store.users[input.UserID]
+	if !ok {
+		return User{}, ErrNotFound
+	}
+	user.Name = input.Name
+	user.AvatarURL = input.AvatarURL
+	store.users[input.UserID] = user
+	return user, nil
+}
+
 func (store *memoryStore) SetUserStatus(_ context.Context, input SetUserStatusInput) (User, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -576,6 +623,10 @@ func (store *memoryStore) InitIndexes(context.Context) error { return nil }
 // 积分、团队、会员的真实行为由 mongo_integration_test.go 对真实 MongoDB 验证。
 // memoryStore 上已定义的同名方法会覆盖这里的实现，所以两者不会互相干扰。
 type unimplementedStore struct{}
+
+func (unimplementedStore) UpdateUserProfile(context.Context, UpdateUserProfileInput) (User, error) {
+	return User{}, ErrNotFound
+}
 
 func (unimplementedStore) GrantPoints(context.Context, GrantPointsInput) (PointEntry, error) {
 	return PointEntry{}, ErrNotFound

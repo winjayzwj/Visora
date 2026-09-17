@@ -46,7 +46,7 @@ export function PromptCard({
     return (
         <Card
             className={cn(
-                "studio-card !gap-0 !p-0 rounded-lg border transition-colors hover:bg-[var(--studio-raised)]",
+                "!gap-0 !p-0 transition-colors hover:bg-surface-secondary",
                 compact ? cn("cursor-pointer overflow-hidden", masonry && "mb-4 break-inside-avoid") : masonry ? "mb-4 break-inside-avoid overflow-hidden" : "flex h-full flex-col overflow-hidden",
             )}
         >

@@ -81,12 +81,24 @@ func (app *app) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		app.login(w, r)
+	case "/api/auth/register":
+		if r.Method != http.MethodPost {
+			methodNotAllowed(w, http.MethodPost)
+			return
+		}
+		app.register(w, r)
 	case "/api/auth/me":
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w, http.MethodGet)
 			return
 		}
 		app.me(w, r)
+	case "/api/auth/profile":
+		if r.Method != http.MethodPatch {
+			methodNotAllowed(w, http.MethodPatch)
+			return
+		}
+		app.updateProfile(w, r)
 	case "/api/auth/logout":
 		if r.Method != http.MethodPost {
 			methodNotAllowed(w, http.MethodPost)
@@ -336,24 +348,42 @@ func (app *app) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, tokenHash, err := newSessionToken()
+	if !app.startSession(w, r, user) {
+		return
+	}
+	writeJSON(w, http.StatusOK, struct {
+		User User `json:"user"`
+	}{User: user})
+}
+
+func (app *app) register(w http.ResponseWriter, r *http.Request) {
+	var input credentialsInput
+	if !app.decodeJSON(w, r, &input) {
+		return
+	}
+	email, err := NormalizeEmail(input.Email)
+	if err != nil || !passwordAllowed(input.Password) {
+		writeError(w, http.StatusBadRequest, "INVALID_INPUT", "请求参数无效")
+		return
+	}
+	passwordHash, err := HashPassword(input.Password)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_INPUT", "请求参数无效")
+		return
+	}
+	user, err := app.store.CreateUser(r.Context(), CreateUserInput{Email: email, PasswordHash: passwordHash, CreatedAt: app.now().UTC()})
+	if errors.Is(err, ErrEmailExists) {
+		writeError(w, http.StatusConflict, "EMAIL_EXISTS", "邮箱已存在")
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "服务暂不可用")
 		return
 	}
-	now := app.now().UTC()
-	if err := app.store.CreateSession(r.Context(), Session{
-		TokenHash:      tokenHash,
-		UserID:         user.ID,
-		SessionVersion: user.SessionVersion,
-		CreatedAt:      now,
-		ExpiresAt:      now.Add(app.config.SessionTTL),
-	}); err != nil {
-		writeError(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "服务暂不可用")
+	if !app.startSession(w, r, user) {
 		return
 	}
-	app.setSessionCookie(w, token)
-	writeJSON(w, http.StatusOK, struct {
+	writeJSON(w, http.StatusCreated, struct {
 		User User `json:"user"`
 	}{User: user})
 }
@@ -369,6 +399,30 @@ func (app *app) me(w http.ResponseWriter, r *http.Request) {
 	}{User: user})
 }
 
+func (app *app) updateProfile(w http.ResponseWriter, r *http.Request) {
+	user, err := app.currentUser(r)
+	if err != nil {
+		app.writeAuthError(w, err)
+		return
+	}
+	var input profileInput
+	if !app.decodeJSON(w, r, &input) {
+		return
+	}
+	updated, err := app.store.UpdateUserProfile(r.Context(), UpdateUserProfileInput{UserID: user.ID, Name: strings.TrimSpace(input.Name), AvatarURL: strings.TrimSpace(input.AvatarURL)})
+	if errors.Is(err, ErrNotFound) {
+		app.writeAuthError(w, errUnauthenticated)
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "服务暂不可用")
+		return
+	}
+	writeJSON(w, http.StatusOK, struct {
+		User User `json:"user"`
+	}{User: updated})
+}
+
 func (app *app) logout(w http.ResponseWriter, r *http.Request) {
 	var input struct{}
 	if !app.decodeJSON(w, r, &input) {
@@ -382,6 +436,21 @@ func (app *app) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	app.setSessionCookie(w, "")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *app) startSession(w http.ResponseWriter, r *http.Request, user User) bool {
+	token, tokenHash, err := newSessionToken()
+	if err != nil {
+		writeError(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "服务暂不可用")
+		return false
+	}
+	now := app.now().UTC()
+	if err := app.store.CreateSession(r.Context(), Session{TokenHash: tokenHash, UserID: user.ID, SessionVersion: user.SessionVersion, CreatedAt: now, ExpiresAt: now.Add(app.config.SessionTTL)}); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "服务暂不可用")
+		return false
+	}
+	app.setSessionCookie(w, token)
+	return true
 }
 
 func (app *app) listUsers(w http.ResponseWriter, r *http.Request) {
@@ -706,6 +775,11 @@ func decodeCursor(value string) (UserCursor, error) {
 type credentialsInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type profileInput struct {
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatarUrl"`
 }
 
 type statusInput struct {

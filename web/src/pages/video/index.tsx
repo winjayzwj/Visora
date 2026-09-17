@@ -1,6 +1,6 @@
-import { ArrowLeft, ArrowRight, BookOpen, ClipboardPaste, Download, FolderPlus, History, LoaderCircle, Plus, SlidersHorizontal, Sparkles, Trash2, Upload, VideoIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, ClipboardPaste, Download, FolderPlus, History, Layers, LoaderCircle, Plus, SlidersHorizontal, Sparkles, Trash2, Upload, VideoIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { Button as HeroButton, Surface } from "@heroui/react";
+import { Button as HeroButton, ButtonGroup, Card as HeroCard, Surface } from "@heroui/react";
 import { App, Button, Drawer, Modal, Tag, Typography } from "@/components/ui/heroui-compat";
 import localforage from "localforage";
 import { nanoid } from "nanoid";
@@ -74,6 +74,8 @@ type UpdateAiConfig = <K extends keyof AiConfig>(key: K, value: AiConfig[K]) => 
 const LOG_STORE_KEY = "visora:video_generation_logs";
 const logStore = localforage.createInstance({ name: "visora", storeName: "video_generation_logs" });
 
+const VIDEO_INSPIRATIONS = ["neon", "product", "sunrise"] as const;
+
 export default function VideoPage() {
     const { message } = App.useApp();
     const { t } = useTranslation();
@@ -95,6 +97,7 @@ export default function VideoPage() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [promptDialogOpen, setPromptDialogOpen] = useState(false);
     const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+    const [inspirationDialogOpen, setInspirationDialogOpen] = useState(false);
     const [startedAt, setStartedAt] = useState(0);
     const [elapsedMs, setElapsedMs] = useState(0);
     const [selectedLogIds, setSelectedLogIds] = useState<string[]>([]);
@@ -110,6 +113,12 @@ export default function VideoPage() {
 
     const model = effectiveConfig.videoModel || effectiveConfig.model;
     const canGenerate = Boolean(prompt.trim());
+    const videoInspirations = VIDEO_INSPIRATIONS.map((id) => ({
+        id,
+        title: t(`studio.video.inspirations.${id}.title`),
+        category: t(`studio.video.inspirations.${id}.category`),
+        prompt: t(`studio.video.inspirations.${id}.prompt`),
+    }));
 
     useEffect(() => {
         if (!running || !startedAt) return;
@@ -381,12 +390,30 @@ export default function VideoPage() {
                 <StudioPageHeader
                     title={t("videoWorkbench.title")}
                     icon={VideoIcon}
-                    meta="从提示词或图片开始创作"
+                    meta={t("studio.video.description")}
                     actions={
-                        <div className="lg:hidden">
-                            <Button icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
-                                {t("workbench.settings")}
-                            </Button>
+                        <div className="flex items-center gap-2">
+                            <ButtonGroup variant="tertiary" size="sm" aria-label={t("studio.resources")}>
+                                <HeroButton onPress={() => setPromptDialogOpen(true)}>
+                                    <BookOpen className="size-3.5" />
+                                    {t("studio.promptLibrary")}
+                                </HeroButton>
+                                <HeroButton onPress={() => setAssetPickerOpen(true)}>
+                                    <ButtonGroup.Separator />
+                                    <FolderPlus className="size-3.5" />
+                                    {t("studio.myAssets")}
+                                </HeroButton>
+                                <HeroButton onPress={() => setInspirationDialogOpen(true)}>
+                                    <ButtonGroup.Separator />
+                                    <Layers className="size-3.5" />
+                                    {t("studio.inspiration")}
+                                </HeroButton>
+                            </ButtonGroup>
+                            <div className="lg:hidden">
+                                <Button icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
+                                    {t("workbench.settings")}
+                                </Button>
+                            </div>
                         </div>
                     }
                 />
@@ -408,29 +435,25 @@ export default function VideoPage() {
                                             placeholder={t("videoWorkbench.promptPlaceholder")}
                                         />
                                         <InputGroupAddon align="block-end" className="flex-wrap justify-between gap-y-2 border-t border-[var(--studio-border)]">
-                                            <InputGroupText className="text-xs">{prompt.trim().length} 字</InputGroupText>
-                                            <div className="flex min-w-0 flex-wrap items-center gap-1">
-                                                <InputGroupButton variant="ghost" size="xs" onClick={() => setPromptDialogOpen(true)}>
-                                                    <BookOpen className="size-3.5" />提示词库
+                                            <InputGroupText className="text-xs">{t("studio.characters", { count: prompt.trim().length })}</InputGroupText>
+                                            {prompt ? (
+                                                <InputGroupButton variant="ghost" size="xs" onClick={() => setPrompt("")}>
+                                                    {t("studio.clear")}
                                                 </InputGroupButton>
-                                                <InputGroupButton variant="ghost" size="xs" onClick={() => setAssetPickerOpen(true)}>
-                                                    <FolderPlus className="size-3.5" />我的资产
-                                                </InputGroupButton>
-                                                {prompt ? <InputGroupButton variant="ghost" size="xs" onClick={() => setPrompt("")}>清空</InputGroupButton> : null}
-                                            </div>
+                                            ) : null}
                                         </InputGroupAddon>
                                     </InputGroup>
                                 </div>
 
                                 <div className="min-w-0">
                                     <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
-                                        <span className="studio-field-label shrink-0">图片 ({references.length})</span>
+                                        <span className="studio-field-label shrink-0">{t("studio.images", { count: references.length })}</span>
                                         <div className="flex min-w-0 max-w-full flex-wrap justify-end">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <HeroButton isIconOnly variant="tertiary" size="sm" aria-label={t("workbench.clipboard")} onPress={() => void addReferencesFromClipboard()}><ClipboardPaste className="size-3.5" /></HeroButton>
                                                 </TooltipTrigger>
-                                                <TooltipContent>从剪贴板添加图片</TooltipContent>
+                                                <TooltipContent>{t("studio.addFromClipboard")}</TooltipContent>
                                             </Tooltip>
                                         </div>
                                     </div>
@@ -464,13 +487,13 @@ export default function VideoPage() {
                                         ))}
                                         <HeroButton variant="tertiary" className="studio-reference-action" onPress={() => fileInputRef.current?.click()}>
                                             <span className="studio-reference-action-icon"><Plus className="size-4" /></span>
-                                            <span>添加</span>
+                                            <span>{t("studio.add")}</span>
                                         </HeroButton>
                                         <HeroButton variant="tertiary" className="studio-reference-action" onPress={() => setLogsOpen(true)}>
                                             <span className="studio-reference-action-icon"><History className="size-4" /></span>
-                                            <span>我的创作</span>
+                                            <span>{t("studio.creations")}</span>
                                         </HeroButton>
-                                        {!references.length && <p className="studio-reference-drop-hint">{referenceDragTarget ? "松开鼠标添加图片" : "拖拽或点击上传 JPG、PNG 或 WEBP 图片"}</p>}
+                                        {!references.length && <p className="studio-reference-drop-hint">{referenceDragTarget ? t("studio.dropImages") : t("studio.uploadImages")}</p>}
                                     </div>
                                 </div>
 
@@ -531,7 +554,7 @@ export default function VideoPage() {
                         event.target.value = "";
                     }}
                 />
-                <Modal title="我的创作" open={logsOpen} onCancel={() => setLogsOpen(false)} footer={null} width="80vw" styles={{ body: { minHeight: "min(70dvh, 680px)" } }}>
+                <Modal title={t("studio.creations")} open={logsOpen} onCancel={() => setLogsOpen(false)} footer={null} width="80vw" styles={{ body: { minHeight: "min(70dvh, 680px)" } }}>
                     <CreationGallery
                         logs={logs}
                         activeLogId={previewLog?.id}
@@ -553,6 +576,31 @@ export default function VideoPage() {
                 </Drawer>
                 <PromptSelectDialog open={promptDialogOpen} onOpenChange={setPromptDialogOpen} onSelect={setPrompt} />
                 <AssetPickerModal open={assetPickerOpen} defaultTab="my-assets" onInsert={(payload) => void insertPickedAsset(payload)} onClose={() => setAssetPickerOpen(false)} />
+                <Modal title={t("studio.video.inspirations.title")} open={inspirationDialogOpen} onCancel={() => setInspirationDialogOpen(false)} footer={null} width={920}>
+                    <div className="grid gap-3 md:grid-cols-3">
+                        {videoInspirations.map((item) => (
+                            <HeroCard key={item.id} variant="secondary" className="flex min-w-0 flex-col">
+                                <HeroCard.Content className="flex flex-1 flex-col p-4">
+                                    <span className="text-xs text-[var(--studio-muted)]">{item.category}</span>
+                                    <h2 className="mt-2 text-base font-semibold text-[var(--studio-text)]">{item.title}</h2>
+                                    <p className="mt-3 line-clamp-4 text-sm leading-6 text-[var(--studio-muted)]">{item.prompt}</p>
+                                    <HeroButton
+                                        variant="secondary"
+                                        size="sm"
+                                        className="mt-4 w-full"
+                                        onPress={() => {
+                                            setPrompt(item.prompt);
+                                            setInspirationDialogOpen(false);
+                                        }}
+                                    >
+                                        <Sparkles className="size-3.5" />
+                                        {t("prompts.use")}
+                                    </HeroButton>
+                                </HeroCard.Content>
+                            </HeroCard>
+                        ))}
+                    </div>
+                </Modal>
                 <Modal title={t("workbench.deleteLogs")} open={deleteConfirmOpen} onCancel={() => setDeleteConfirmOpen(false)} onOk={deleteSelectedLogs} okText={t("common.delete")} okButtonProps={{ danger: true }} cancelText={t("common.cancel")}>
                     {t("workbench.deleteLogsConfirm", { count: selectedLogIds.length })}
                 </Modal>
@@ -569,7 +617,7 @@ function GenerationSettings({ config, model, updateConfig, openConfigDialog }: {
         <>
             <label className="col-span-2 block min-w-0">
                 <span className="studio-field-label mb-2">{t("workbench.model")}</span>
-                <ModelPicker config={config} value={model} onChange={(value) => updateConfig("videoModel", value)} capability="video" fullWidth className="!h-10 !rounded-xl !shadow-none" onMissingConfig={() => openConfigDialog(false)} />
+                <ModelPicker config={config} value={model} onChange={(value) => updateConfig("videoModel", value)} capability="video" fullWidth className="!h-7 !rounded-xl !shadow-none" onMissingConfig={() => openConfigDialog(false)} />
             </label>
             <div className="col-span-2 min-w-0">
                 <VideoSettingsPanel config={config} onConfigChange={(key, value) => updateConfig(key, value)} theme={theme} showTitle={false} className="space-y-4" />

@@ -1,8 +1,11 @@
 export type PlatformUser = {
     id: string;
     email: string;
+    name: string;
+    avatarUrl: string;
     role: "user" | "admin";
     status: "active" | "disabled";
+    points: number;
     createdAt: string;
 };
 
@@ -33,6 +36,16 @@ export async function fetchPlatformUser(options?: RequestOptions): Promise<Platf
 
 export async function loginPlatformUser(input: { email: string; password: string }, options?: RequestOptions): Promise<PlatformUser> {
     const data = await requestJson(`${API_ROOT}/login`, { method: "POST", headers: requestHeaders, body: JSON.stringify(input), signal: options?.signal }, options);
+    return readUser(data);
+}
+
+export async function registerPlatformUser(input: { email: string; password: string }, options?: RequestOptions): Promise<PlatformUser> {
+    const data = await requestJson(`${API_ROOT}/register`, { method: "POST", headers: requestHeaders, body: JSON.stringify(input), signal: options?.signal }, options);
+    return readUser(data);
+}
+
+export async function updatePlatformProfile(input: { name: string; avatarUrl: string }, options?: RequestOptions): Promise<PlatformUser> {
+    const data = await requestJson(`${API_ROOT}/profile`, { method: "PATCH", headers: requestHeaders, body: JSON.stringify(input), signal: options?.signal }, options);
     return readUser(data);
 }
 
@@ -93,7 +106,16 @@ function readUser(value: unknown): PlatformUser {
     if (typeof user.id !== "string" || typeof user.email !== "string" || (user.role !== "user" && user.role !== "admin") || (user.status !== "active" && user.status !== "disabled") || typeof user.createdAt !== "string") {
         throw new PlatformAuthError("服务返回了无效响应，请稍后重试。", "response");
     }
-    return { id: user.id, email: user.email, role: user.role, status: user.status, createdAt: user.createdAt };
+    return {
+        id: user.id,
+        email: user.email,
+        name: typeof user.name === "string" ? user.name : "",
+        avatarUrl: typeof user.avatarUrl === "string" ? user.avatarUrl : "",
+        role: user.role,
+        status: user.status,
+        points: typeof user.points === "number" ? user.points : 0,
+        createdAt: user.createdAt,
+    };
 }
 
 function readError(value: unknown) {

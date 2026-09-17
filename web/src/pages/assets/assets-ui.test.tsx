@@ -50,3 +50,17 @@ test("edit/view share the split layout; close dots retain equal insets and a lar
     expect(motion).toContain("prefers-reduced-motion: reduce");
     expect(motion).toContain("(hover: hover) and (pointer: fine)");
 });
+
+test("resource libraries place search below the breadcrumb without an outer surface", () => {
+    const assetsSource = readFileSync(new URL("./index.tsx", import.meta.url), "utf8");
+    const promptsSource = readFileSync(new URL("../prompts/index.tsx", import.meta.url), "utf8");
+    const studioCss = readFileSync(new URL("../../styles/studio.css", import.meta.url), "utf8");
+
+    expect(assetsSource.indexOf("<StudioPageHeader")).toBeLessThan(assetsSource.indexOf('role="search"'));
+    expect(promptsSource.indexOf("<StudioPageHeader")).toBeLessThan(promptsSource.indexOf('role="search"'));
+    expect(assetsSource).not.toContain('Card className="studio-panel');
+    expect(promptsSource).not.toContain('Card className="studio-panel');
+    expect(assetsSource).not.toContain("rounded-lg border !gap-0");
+    expect(promptsSource).not.toContain("rounded-lg border transition-colors");
+    expect(studioCss).not.toMatch(/\.studio-page-header\s*\{[^}]*border-bottom/);
+});

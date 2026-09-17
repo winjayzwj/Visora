@@ -1,9 +1,9 @@
-import { Copy, Download, Eye, PencilLine, Search, Trash2, Upload } from "lucide-react";
+import { ChevronDown, Copy, Download, Eye, PencilLine, Search, Trash2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { App, Button, Form, Input, Modal, Pagination, Select, Space, Tag, Typography } from "@/components/ui/heroui-compat";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
-import { Card } from "@heroui/react";
+import { Button as HeroButton, ButtonGroup, Card, Dropdown, Tabs } from "@heroui/react";
 
 import { StudioEmptyState, StudioPageHeader } from "@/components/studio/studio-primitives";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -205,22 +205,34 @@ export default function AssetsPage() {
                         icon={Upload}
                         meta={t("assets.description")}
                         actions={
-                            <>
-                                <Button type="text" icon={<Download className="size-4" />} onClick={() => void exportAllAssets()}>
-                                    {t("assets.export")}
-                                </Button>
-                                <Button type="text" icon={<Upload className="size-4" />} onClick={() => assetInputRef.current?.click()}>
-                                    {t("assets.import")}
-                                </Button>
-                                <Button type="primary" icon={<PencilLine className="size-4" />} onClick={openCreate}>
+                            <ButtonGroup variant="secondary" aria-label="资产操作">
+                                <HeroButton onPress={openCreate}>
+                                    <PencilLine className="size-4" />
                                     {t("assets.add")}
-                                </Button>
-                            </>
+                                </HeroButton>
+                                <Dropdown>
+                                    <HeroButton isIconOnly variant="secondary" aria-label="更多资产操作">
+                                        <ButtonGroup.Separator />
+                                        <ChevronDown className="size-4" />
+                                    </HeroButton>
+                                    <Dropdown.Popover placement="bottom end">
+                                        <Dropdown.Menu aria-label="更多资产操作">
+                                            <Dropdown.Item id="import" textValue={t("assets.import")} onAction={() => assetInputRef.current?.click()}>
+                                                <Upload className="size-4" />
+                                                {t("assets.import")}
+                                            </Dropdown.Item>
+                                            <Dropdown.Item id="export" textValue={t("assets.export")} onAction={() => void exportAllAssets()}>
+                                                <Download className="size-4" />
+                                                {t("assets.export")}
+                                            </Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown.Popover>
+                                </Dropdown>
+                            </ButtonGroup>
                         }
                     />
 
-                    <Card className="studio-panel !gap-0 !p-0 overflow-hidden rounded-xl">
-                        <Card.Content className="!gap-0 p-5">
+                    <div className="min-w-0">
                             <div role="search" aria-label={t("assets.search")} className="flex flex-wrap items-center gap-3">
                                 <div className="min-w-0 basis-64 flex-1 sm:max-w-md">
                                     <Input
@@ -235,24 +247,25 @@ export default function AssetsPage() {
                                         }}
                                     />
                                 </div>
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                    <span className="text-xs font-medium text-[var(--studio-muted)]">{t("assets.type")}</span>
-                                    <div className="flex flex-wrap gap-2">
-                                        {kindOptions.map((option) => (
-                                            <Tag.CheckableTag
-                                                key={option}
-                                                checked={kindFilter === option}
-                                                className={cn("prompt-filter-tag", kindFilter === option && "is-active")}
-                                                onChange={() => {
-                                                    setPage(1);
-                                                    setKindFilter(option);
-                                                }}
-                                            >
-                                                {option === "all" ? t("common.all") : t(`assets.kinds.${option}`)}
-                                            </Tag.CheckableTag>
-                                        ))}
-                                    </div>
-                                </div>
+                                <Tabs
+                                    selectedKey={kindFilter}
+                                    onSelectionChange={(key) => {
+                                        setPage(1);
+                                        setKindFilter(key as AssetKind | "all");
+                                    }}
+                                    className="min-w-0"
+                                >
+                                    <Tabs.ListContainer className="h-10">
+                                        <Tabs.List aria-label={t("assets.type")} className="grid h-full grid-cols-4">
+                                            {kindOptions.map((option) => (
+                                                <Tabs.Tab key={option} id={option} className="justify-center px-3">
+                                                    {option === "all" ? t("common.all") : t(`assets.kinds.${option}`)}
+                                                    <Tabs.Indicator />
+                                                </Tabs.Tab>
+                                            ))}
+                                        </Tabs.List>
+                                    </Tabs.ListContainer>
+                                </Tabs>
                             </div>
 
                             <div className="mt-5 flex flex-col gap-5">
@@ -288,8 +301,7 @@ export default function AssetsPage() {
                                     </div>
                                 )}
                             </div>
-                        </Card.Content>
-                    </Card>
+                    </div>
                 </div>
             </main>
 
@@ -404,7 +416,7 @@ function AssetCard({ asset, onOpen, onEdit, onCopy, onDownload, onDelete }: { as
         { key: "delete", Icon: Trash2, onClick: onDelete },
     ];
     return (
-        <Card className="studio-card mb-4 break-inside-avoid overflow-hidden rounded-lg border !gap-0 !p-0 transition-colors hover:bg-[var(--studio-raised)]">
+        <Card className="mb-4 break-inside-avoid overflow-hidden !gap-0 !p-0 transition-colors hover:bg-surface-secondary">
             <button type="button" className="block w-full text-left" onClick={onOpen}>
                 {cover ? (
                     <img src={cover} alt={asset.title} className="h-auto w-full object-cover" loading="lazy" />

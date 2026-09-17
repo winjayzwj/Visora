@@ -66,6 +66,8 @@ var (
 type User struct {
 	ID             string    `json:"id"`
 	Email          string    `json:"email"`
+	Name           string    `json:"name"`
+	AvatarURL      string    `json:"avatarUrl"`
 	Role           string    `json:"role"`
 	Status         string    `json:"status"`
 	Points         int64     `json:"points"`
@@ -95,6 +97,12 @@ type CreateUserInput struct {
 	CreatedAt    time.Time
 }
 
+type UpdateUserProfileInput struct {
+	UserID    string
+	Name      string
+	AvatarURL string
+}
+
 type SetUserStatusInput struct {
 	UserID    string
 	Status    string
@@ -116,6 +124,7 @@ type AccountStore interface {
 	FindSessionByTokenHash(context.Context, [32]byte) (Session, error)
 	DeleteSession(context.Context, [32]byte) error
 	CreateUser(context.Context, CreateUserInput) (User, error)
+	UpdateUserProfile(context.Context, UpdateUserProfileInput) (User, error)
 	SetUserStatus(context.Context, SetUserStatusInput) (User, error)
 	ListUsers(context.Context, ListUsersInput) ([]User, error)
 	CreateAdmin(context.Context, string, []byte, time.Time) (User, error)

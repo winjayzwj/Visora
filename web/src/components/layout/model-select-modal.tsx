@@ -90,6 +90,7 @@ export function ModelSelectModal({ open, channel, selectedNames, onConfirm, onCl
             width={880}
             centered
             onCancel={onClose}
+            className="config-modal"
             title={
                 <span>
                     {t("config.modelSelect.title")} <span className="ml-2 text-xs font-normal text-stone-500">{t("config.modelSelect.selected", { selected: selected.size, total: new Set([...existing, ...fetched]).size })}</span>

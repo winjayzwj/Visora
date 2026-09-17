@@ -24,6 +24,7 @@ export interface SpecularButtonProps {
   autoAnimate?: boolean;
   disabled?: boolean;
   'aria-busy'?: boolean;
+  'aria-label'?: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
   className?: string;
   type?: 'button' | 'submit' | 'reset';
@@ -133,6 +134,7 @@ const SpecularButton = ({
   autoAnimate = false,
   disabled = false,
   'aria-busy': busy = false,
+  'aria-label': ariaLabel,
   onClick,
   className = '',
   type = 'button'
@@ -284,6 +286,7 @@ const SpecularButton = ({
       type={type}
       disabled={disabled}
       aria-busy={busy}
+      aria-label={ariaLabel}
       onClick={onClick}
       className={`relative m-0 inline-flex cursor-pointer items-center justify-center border-none font-medium leading-none tracking-[0.01em] outline-none transition-transform duration-150 active:scale-[0.97] disabled:cursor-default disabled:opacity-55 disabled:active:scale-100 [color:var(--sb-text-color)] [border-radius:var(--sb-radius)] [background:color-mix(in_srgb,var(--sb-tint)_calc(var(--sb-tint-opacity)*100%),transparent)] [backdrop-filter:blur(var(--sb-blur))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.25)] focus-visible:outline-2 focus-visible:outline-offset-[3px] ${SIZES[size] || SIZES.md}${className ? ` ${className}` : ''}`}
       style={

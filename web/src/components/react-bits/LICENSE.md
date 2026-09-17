@@ -28,6 +28,12 @@ Source: https://github.com/DavidHDev/react-bits/blob/main/src/ts-tailwind/Compon
 
 BlurText source: https://github.com/DavidHDev/react-bits/blob/main/src/ts-tailwind/TextAnimations/BlurText/BlurText.tsx
 
+RotatingText source: https://github.com/DavidHDev/react-bits/blob/main/src/content/TextAnimations/RotatingText/RotatingText.jsx
+
+Official TypeScript/Tailwind RotatingText installed via Shadcn CLI: https://reactbits.dev/r/RotatingText-TS-TW.json
+
+GradientText source: https://reactbits.dev/r/GradientText-TS-TW.json
+
 Visora adaptation: theme-neutral surface, pointer CSS variables (no React render
 per pointer event), keyboard focus feedback, and reduced-motion support.
 BlurText uses Motion's visibility hook, a single accessible text label, visible

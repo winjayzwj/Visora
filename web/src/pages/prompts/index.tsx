@@ -1,6 +1,6 @@
 import { FolderPlus, Search, X } from "lucide-react";
 import { type ReactNode, type UIEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Card, ComboBox, Input as HeroInput, Label, ListBox, Select } from "@heroui/react";
+import { ComboBox, Input as HeroInput, Label, ListBox, Select } from "@heroui/react";
 import { App, Button, Input, Spin } from "@/components/ui/heroui-compat";
 import { useTranslation } from "react-i18next";
 
@@ -59,8 +59,7 @@ export default function PromptsPage() {
             <main ref={listRef} className="min-h-0 flex-1 overflow-y-auto" onScroll={handleListScroll}>
                 <div className="studio-container">
                     <StudioPageHeader title={t("prompts.title")} icon={FolderPlus} meta={t("prompts.total", { count: totalPrompts })} />
-                    <Card className="studio-panel min-w-0 !gap-0 !p-0 overflow-hidden rounded-xl">
-                        <Card.Content className="!gap-0 p-5">
+                    <div className="min-w-0">
                             <div role="search" aria-label={t("prompts.filters")}>
                                 <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_minmax(0,18rem)_auto]">
                                     <div className="min-w-0 space-y-2 sm:col-span-2 lg:col-span-1">
@@ -84,7 +83,7 @@ export default function PromptsPage() {
                                         }}
                                     >
                                         <Label className="studio-field-label">{t("prompts.category")}</Label>
-                                        <Select.Trigger className="w-full min-w-0">
+                                        <Select.Trigger className="h-7 w-full min-w-0 text-xs">
                                             <Select.Value className="min-w-0 flex-1 truncate" />
                                             <Select.Indicator />
                                         </Select.Trigger>
@@ -114,7 +113,7 @@ export default function PromptsPage() {
                                             {selectedTags.length ? ` · ${selectedTags.length}` : ""}
                                         </Label>
                                         <ComboBox.InputGroup>
-                                            <HeroInput placeholder={t("prompts.searchTags")} className="min-w-0" />
+                                            <HeroInput placeholder={t("prompts.searchTags")} className="h-7 min-w-0 text-xs" />
                                             <ComboBox.Trigger />
                                         </ComboBox.InputGroup>
                                         <ComboBox.Popover className="max-h-72 max-w-[calc(100vw-32px)] overflow-y-auto overscroll-contain">
@@ -188,8 +187,7 @@ export default function PromptsPage() {
                             <div className="mt-6 text-center text-xs text-[var(--studio-muted)]" aria-live="polite">
                                 {query.isFetchingNextPage ? t("prompts.loading") : query.hasNextPage ? t("prompts.loadMore") : promptItems.length > 0 ? t("prompts.end") : null}
                             </div>
-                        </Card.Content>
-                    </Card>
+                    </div>
                 </div>
             </main>
 

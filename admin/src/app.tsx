@@ -250,7 +250,7 @@ export function AdminApp() {
         content = <SessionErrorView message={auth.message} onRetry={checkSession} />;
     } else if (auth.kind === "anonymous") {
         content = (
-            <LoginPage mode={themeMode} onLogin={handleLogin} onModeChange={setThemeMode} pending={loginPending} webOrigin={webOrigin} />
+            <LoginPage mode={themeMode} onLogin={handleLogin} onModeChange={setThemeMode} pending={loginPending} />
         );
     } else if (auth.user.role !== "admin" || accessDenied) {
         content = (
@@ -277,7 +277,6 @@ export function AdminApp() {
                         element={
                             <DashboardPage
                                 sessionToken={sessionToken}
-                                user={auth.user}
                                 onForbidden={markForbidden}
                                 onUnauthorized={clearSession}
                             />

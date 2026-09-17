@@ -43,9 +43,54 @@ function localPluginsManifest(): Plugin {
 const webPort = Number(process.env.VISORA_WEB_PORT) || 8890;
 const apiTarget = process.env.VISORA_API_TARGET;
 const adminTarget = process.env.VISORA_ADMIN_TARGET;
+const modelRelayPath = "/__visora_model_proxy__";
 
 function isWritableResponse(value: unknown): value is { headersSent: boolean; statusCode: number; setHeader: (name: string, value: string) => void; end: (body?: string) => void } {
     return Boolean(value && typeof value === "object" && "headersSent" in value && "setHeader" in value && "end" in value);
+}
+
+// Vite only listens on localhost. This development-only relay forwards model-list GET requests
+// and their Authorization header when an upstream API does not implement browser CORS.
+function localModelRelay(): Plugin {
+    const excludedRequestHeaders = new Set(["host", "connection", "content-length", "accept-encoding", "origin", "referer", "sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site"]);
+    const excludedResponseHeaders = new Set(["connection", "content-encoding", "content-length", "keep-alive", "transfer-encoding"]);
+    return {
+        name: "local-model-relay",
+        configureServer(server) {
+            server.middlewares.use(modelRelayPath, (request, response, next) => {
+                if (request.method !== "GET" && request.method !== "HEAD") return next();
+                const encodedTarget = new URL(request.url || "/", "http://127.0.0.1").searchParams.get("url");
+                let target: URL;
+                try {
+                    target = new URL(encodedTarget || "");
+                    if (target.protocol !== "http:" && target.protocol !== "https:") throw new Error("unsupported protocol");
+                } catch {
+                    response.statusCode = 400;
+                    response.setHeader("Content-Type", "application/json; charset=utf-8");
+                    response.end(JSON.stringify({ error: "Invalid model relay target" }));
+                    return;
+                }
+                const headers = Object.fromEntries(
+                    Object.entries(request.headers)
+                        .filter(([name, value]) => value !== undefined && !excludedRequestHeaders.has(name.toLowerCase()))
+                        .map(([name, value]) => [name, Array.isArray(value) ? value.join(", ") : value as string]),
+                );
+                void fetch(target, { method: request.method, headers, redirect: "follow" })
+                    .then(async (upstream) => {
+                        response.statusCode = upstream.status;
+                        upstream.headers.forEach((value, name) => {
+                            if (!excludedResponseHeaders.has(name.toLowerCase())) response.setHeader(name, value);
+                        });
+                        response.end(Buffer.from(await upstream.arrayBuffer()));
+                    })
+                    .catch((error) => {
+                        response.statusCode = 502;
+                        response.setHeader("Content-Type", "application/json; charset=utf-8");
+                        response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Model relay failed" }));
+                    });
+            });
+        },
+    };
 }
 
 // 代理只在显式告知目标时才创建，避免在没有后端的机器上伪装成可用服务。
@@ -71,7 +116,7 @@ const proxy = {
 
 export default defineConfig({
     base: process.env.VITE_BASE || "/",
-    plugins: [react(), localPluginsManifest()],
+    plugins: [react(), localPluginsManifest(), localModelRelay()],
     server: {
         host: "127.0.0.1",
         port: webPort,

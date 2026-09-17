@@ -1,13 +1,15 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Breadcrumbs } from "@heroui/react";
+import { useTranslation } from "react-i18next";
 
 export function StudioPageHeader({ title, icon: Icon, actions, meta }: { title: string; icon: LucideIcon; actions?: ReactNode; meta?: ReactNode }) {
+    const { t } = useTranslation();
     return (
         <header className="studio-page-header">
             <h1 className="sr-only">{title}</h1>
-            <Breadcrumbs className="studio-page-breadcrumbs" aria-label={`${title}位置`}>
-                <Breadcrumbs.Item href="/">创作台</Breadcrumbs.Item>
+            <Breadcrumbs className="studio-page-breadcrumbs" aria-label={`${title} · ${t("studio.home")}`}>
+                <Breadcrumbs.Item href="/">{t("studio.home")}</Breadcrumbs.Item>
                 <Breadcrumbs.Item>
                     <span className="flex items-center gap-2"><Icon className="size-4" strokeWidth={1.75} aria-hidden="true" />{title}</span>
                 </Breadcrumbs.Item>

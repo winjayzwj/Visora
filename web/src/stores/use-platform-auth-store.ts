@@ -1,27 +1,34 @@
 import { create } from "zustand";
 
-import { fetchPlatformUser, loginPlatformUser, logoutPlatformUser, PlatformAuthError, type PlatformUser } from "../services/api/platform-auth";
+import { fetchPlatformUser, loginPlatformUser, logoutPlatformUser, registerPlatformUser, updatePlatformProfile, PlatformAuthError, type PlatformUser } from "../services/api/platform-auth";
 
 type PlatformAuthClient = {
     fetchPlatformUser: typeof fetchPlatformUser;
     loginPlatformUser: typeof loginPlatformUser;
+    registerPlatformUser: typeof registerPlatformUser;
     logoutPlatformUser: typeof logoutPlatformUser;
+    updatePlatformProfile: typeof updatePlatformProfile;
 };
 
 type PlatformAuthStore = {
     user: PlatformUser | null;
     checking: boolean;
     loggingIn: boolean;
+    registering: boolean;
     loggingOut: boolean;
+    updatingProfile: boolean;
     error: PlatformAuthError | null;
     check: () => Promise<PlatformUser | null>;
     login: (email: string, password: string) => Promise<PlatformUser | null>;
+    register: (email: string, password: string) => Promise<PlatformUser | null>;
+    updateProfile: (input: { name: string; avatarUrl: string }) => Promise<PlatformUser | null>;
     logout: () => Promise<void>;
 };
 
-const platformAuthClient: PlatformAuthClient = { fetchPlatformUser, loginPlatformUser, logoutPlatformUser };
+const platformAuthClient: PlatformAuthClient = { fetchPlatformUser, loginPlatformUser, registerPlatformUser, logoutPlatformUser, updatePlatformProfile };
 
-export function createPlatformAuthStore(client: PlatformAuthClient = platformAuthClient) {
+export function createPlatformAuthStore(overrides: Partial<PlatformAuthClient> = {}) {
+    const client = { ...platformAuthClient, ...overrides };
     let requestVersion = 0;
     const nextRequest = () => ++requestVersion;
     const isCurrent = (version: number) => version === requestVersion;
@@ -30,11 +37,13 @@ export function createPlatformAuthStore(client: PlatformAuthClient = platformAut
         user: null,
         checking: false,
         loggingIn: false,
+        registering: false,
         loggingOut: false,
+        updatingProfile: false,
         error: null,
         check: async () => {
             // A read must not retire a Cookie-writing request or its reconciliation.
-            if (get().loggingIn || get().loggingOut) return null;
+            if (isBusy(get())) return null;
             const version = nextRequest();
             set({ checking: true, error: null });
             try {
@@ -54,7 +63,7 @@ export function createPlatformAuthStore(client: PlatformAuthClient = platformAut
             }
         },
         login: async (email, password) => {
-            if (get().loggingIn || get().loggingOut) throw authBusyError();
+            if (isBusy(get())) throw authBusyError();
             const version = nextRequest();
             set({ checking: false, loggingIn: true, loggingOut: false, error: null });
             try {
@@ -69,8 +78,40 @@ export function createPlatformAuthStore(client: PlatformAuthClient = platformAut
                 throw authError;
             }
         },
+        register: async (email, password) => {
+            if (isBusy(get())) throw authBusyError();
+            const version = nextRequest();
+            set({ checking: false, registering: true, loggingIn: false, loggingOut: false, error: null });
+            try {
+                const user = await client.registerPlatformUser({ email, password });
+                if (!isCurrent(version)) return null;
+                set({ user, checking: false, registering: false, loggingIn: false, loggingOut: false, error: null });
+                return user;
+            } catch (error) {
+                if (!isCurrent(version)) return null;
+                const authError = normalizeError(error);
+                set({ checking: false, registering: false, error: authError });
+                throw authError;
+            }
+        },
+        updateProfile: async (input) => {
+            if (isBusy(get())) throw authBusyError();
+            const version = nextRequest();
+            set({ checking: false, updatingProfile: true, error: null });
+            try {
+                const user = await client.updatePlatformProfile(input);
+                if (!isCurrent(version)) return null;
+                set({ user, checking: false, updatingProfile: false, error: null });
+                return user;
+            } catch (error) {
+                if (!isCurrent(version)) return null;
+                const authError = normalizeError(error);
+                set({ checking: false, updatingProfile: false, error: authError });
+                throw authError;
+            }
+        },
         logout: async () => {
-            if (get().loggingIn || get().loggingOut) throw authBusyError();
+            if (isBusy(get())) throw authBusyError();
             nextRequest();
             // Acquire synchronously, and hold until the response and any /me reconciliation finish.
             set({ checking: false, loggingOut: true, error: null });
@@ -111,4 +152,8 @@ function normalizeError(error: unknown) {
 
 function authBusyError() {
     return new PlatformAuthError("账户操作进行中，请等待完成。", "response", undefined, "AUTH_BUSY");
+}
+
+function isBusy(state: Pick<PlatformAuthStore, "loggingIn" | "registering" | "loggingOut" | "updatingProfile">) {
+    return state.loggingIn || state.registering || state.loggingOut || state.updatingProfile;
 }

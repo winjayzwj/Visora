@@ -1,27 +1,23 @@
 import { Alert, Button, Skeleton } from "../../components/ui/heroui-compat";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CopyButton } from "../../components/copy-button";
 import { PageHeading } from "../../components/page-heading";
-import { TextType } from "../../components/react-bits/text-type";
 import { SealBadge } from "../../components/seal-badge";
 import { StatCard } from "../../components/stat-card";
 import { errorMessage } from "../../lib/error-message";
 import { formatPoints } from "../../lib/format";
 import { createRequestGate } from "../../lib/request-gate";
-import { ADMIN_ROUTES, PLATFORM_MODULES } from "../../routes";
-import { api, ApiError, isAbortError, type OverviewStats, type User } from "../../services/api/platform";
+import { PLATFORM_MODULES } from "../../routes";
+import { api, ApiError, isAbortError, type OverviewStats } from "../../services/api/platform";
 import { SignupChart } from "./signup-chart";
 
 export function DashboardPage({
     onForbidden,
     onUnauthorized,
     sessionToken,
-    user,
 }: {
     onForbidden: () => void;
     onUnauthorized: () => void;
     sessionToken: number;
-    user: User;
 }) {
     const gate = useRef(createRequestGate());
     const controller = useRef<AbortController>();
@@ -98,39 +94,62 @@ export function DashboardPage({
             ) : null}
 
             {loading && !stats ? (
-                <div className="stat-grid">
-                    {Array.from({ length: 8 }, (_, index) => (
-                        <div className="stat-card" key={index}>
-                            <Skeleton active paragraph={false} title={{ width: "62%" }} />
-                        </div>
+                <div className="dashboard-metrics">
+                    {Array.from({ length: 2 }, (_, group) => (
+                        <section className="dashboard-metric-group" key={group}>
+                            <div className="dashboard-metric-head"><span>加载中</span></div>
+                            <div className="stat-grid">
+                                {Array.from({ length: 4 }, (_, index) => (
+                                    <div className="stat-card" key={index}>
+                                        <Skeleton active paragraph={false} title={{ width: "62%" }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
                     ))}
                 </div>
             ) : stats ? (
-                <div className="stat-grid">
-                    <StatCard
-                        hint={`活跃 ${formatPoints(stats.activeUsers)} · 停用 ${formatPoints(stats.disabledUsers)}`}
-                        label="用户总数"
-                        value={stats.totalUsers}
-                    />
-                    <StatCard hint="按创建时间统计" label="本月新增用户" value={stats.newUsersThisMonth} />
-                    <StatCard
-                        hint={`活跃 ${formatPoints(stats.activeTeams)} / 共 ${formatPoints(stats.totalTeams)}`}
-                        label="团队"
-                        value={stats.totalTeams}
-                    />
-                    <StatCard
-                        hint={`上架 ${formatPoints(stats.activeModels)} / 共 ${formatPoints(stats.totalModels)}`}
-                        label="AI 模型"
-                        value={stats.totalModels}
-                    />
-                    <StatCard hint="等待审批的会员申请" label="待审申请" value={stats.pendingApplications} />
-                    <StatCard hint="仍在有效期内的会员" label="有效会员" value={stats.activeMemberships} />
-                    <StatCard hint="累计发放给账号的积分" label="已发放积分" value={stats.issuedPoints} />
-                    <StatCard
-                        hint={`其中团队池 ${formatPoints(stats.teamPoolPoints)}`}
-                        label="账号持有积分"
-                        value={stats.outstandingPoints}
-                    />
+                <div className="dashboard-metrics">
+                    <section className="dashboard-metric-group" aria-labelledby="resource-metrics-title">
+                        <div className="dashboard-metric-head">
+                            <h2 id="resource-metrics-title">账号与资源</h2>
+                            <span>当前可运营主体</span>
+                        </div>
+                        <div className="stat-grid">
+                            <StatCard
+                                hint={`活跃 ${formatPoints(stats.activeUsers)} · 停用 ${formatPoints(stats.disabledUsers)}`}
+                                label="用户总数"
+                                value={stats.totalUsers}
+                            />
+                            <StatCard hint="按创建时间统计" label="本月新增用户" value={stats.newUsersThisMonth} />
+                            <StatCard
+                                hint={`活跃 ${formatPoints(stats.activeTeams)} / 共 ${formatPoints(stats.totalTeams)}`}
+                                label="团队"
+                                value={stats.totalTeams}
+                            />
+                            <StatCard
+                                hint={`上架 ${formatPoints(stats.activeModels)} / 共 ${formatPoints(stats.totalModels)}`}
+                                label="AI 模型"
+                                value={stats.totalModels}
+                            />
+                        </div>
+                    </section>
+                    <section className="dashboard-metric-group" aria-labelledby="membership-metrics-title">
+                        <div className="dashboard-metric-head">
+                            <h2 id="membership-metrics-title">会员与积分</h2>
+                            <span>待处理与可用额度</span>
+                        </div>
+                        <div className="stat-grid">
+                            <StatCard hint="等待审批的会员申请" label="待审申请" value={stats.pendingApplications} />
+                            <StatCard hint="仍在有效期内的会员" label="有效会员" value={stats.activeMemberships} />
+                            <StatCard hint="累计发放给账号的积分" label="已发放积分" value={stats.issuedPoints} />
+                            <StatCard
+                                hint={`其中团队池 ${formatPoints(stats.teamPoolPoints)}`}
+                                label="账号持有积分"
+                                value={stats.outstandingPoints}
+                            />
+                        </div>
+                    </section>
                 </div>
             ) : null}
 
@@ -168,7 +187,7 @@ export function DashboardPage({
                         <Skeleton active paragraph={{ rows: 4 }} />
                     )}
                     <p className="panel-note">
-                        <TextType delay={420} text="账号积分、团队池、成员已分配是三套独立余额，互不自动兜底。" />
+                        账号积分、团队池、成员已分配是三套独立余额，互不自动兜底。
                     </p>
                 </section>
             </div>
@@ -206,35 +225,6 @@ export function DashboardPage({
                 </table>
             </section>
 
-            <section className="panel" aria-labelledby="session-title">
-                <h2 id="session-title">当前会话</h2>
-                <dl className="session-list">
-                    <div>
-                        <dt>登录账号</dt>
-                        <dd>
-                            {user.email}
-                            <CopyButton label="复制登录账号" value={user.email} />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>权限</dt>
-                        <dd>{user.role === "admin" ? "管理员" : "普通用户"}</dd>
-                    </div>
-                    <div>
-                        <dt>账号状态</dt>
-                        <dd>
-                            <SealBadge status={user.status}>{user.status === "active" ? "正常" : "已停用"}</SealBadge>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>可用积分</dt>
-                        <dd>{formatPoints(user.points)}</dd>
-                    </div>
-                </dl>
-                <p className="panel-note">
-                    停用账号会立即吊销该用户现有会话；管理员账号受保护，不能在后台停用。导航共 {ADMIN_ROUTES.length} 个页面。
-                </p>
-            </section>
         </>
     );
 }

@@ -4,7 +4,36 @@
 @import "shadcn/tailwind.css";
 @source "../../../node_modules/streamdown/dist/*.js";
 
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("/fonts/inter-latin.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "DM Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/dm-mono-regular.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "DM Mono";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("/fonts/dm-mono-medium.woff2") format("woff2");
+}
+
 @custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: "DM Mono", "SFMono-Regular", "Cascadia Code", monospace;
+}
 
 /* 历史代码仍在用 shadcn 的语义类名，这里把 HeroUI 未提供的那些别名接到 HeroUI 默认主题 token 上。
    HeroUI 已自带 background / foreground / surface / accent / muted / overlay / border /
@@ -47,9 +76,12 @@
         overflow: hidden;
     }
     body {
-        @apply bg-background text-foreground;
+        @apply bg-background font-sans text-foreground;
     }
     button {
+        color: var(--muted);
+    }
+    button:is(:hover, :focus-visible, [data-pressed="true"], [aria-pressed="true"], [aria-current="page"], [data-selected="true"]) {
         color: var(--foreground);
     }
     textarea {

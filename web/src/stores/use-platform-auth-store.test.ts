@@ -7,12 +7,30 @@ import { createPlatformAuthStore } from "./use-platform-auth-store";
 const firstUser: PlatformUser = {
     id: "user-1",
     email: "first@example.com",
+    name: "First",
+    avatarUrl: "",
     role: "user",
     status: "active",
+    points: 12,
     createdAt: "2026-09-14T00:00:00Z",
 };
 
 const secondUser: PlatformUser = { ...firstUser, id: "user-2", email: "second@example.com" };
+
+test("registration and profile updates replace the active user", async () => {
+    const registered = { ...firstUser, id: "new-user", email: "new@example.com" };
+    const store = createPlatformAuthStore({
+        registerPlatformUser: async () => registered,
+        updatePlatformProfile: async ({ name, avatarUrl }) => ({ ...registered, name, avatarUrl }),
+    });
+
+    await store.getState().register("new@example.com", "secret");
+    await store.getState().updateProfile({ name: "映序创作者", avatarUrl: "https://example.test/avatar.png" });
+
+    expect(store.getState().user).toMatchObject({ id: "new-user", name: "映序创作者", avatarUrl: "https://example.test/avatar.png" });
+    expect(store.getState().registering).toBe(false);
+    expect(store.getState().updatingProfile).toBe(false);
+});
 
 function deferred<T>() {
     let resolve!: (value: T) => void;

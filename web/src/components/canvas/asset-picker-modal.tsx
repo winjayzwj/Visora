@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Empty, Input, Modal, Pagination, Tag } from "@/components/ui/heroui-compat";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Surface } from "@heroui/react";
+import { Surface, Tabs } from "@heroui/react";
 
-import { cn } from "@/lib/utils";
 import { useAssetStore, type Asset } from "@/stores/use-asset-store";
 
-export type InsertAssetPayload = { kind: "text"; content: string; title: string } | { kind: "image"; dataUrl: string; title: string; storageKey?: string } | { kind: "video"; url: string; title: string; storageKey?: string; width?: number; height?: number };
+export type InsertAssetPayload =
+    | { kind: "text"; content: string; title: string }
+    | { kind: "image"; dataUrl: string; title: string; storageKey?: string }
+    | { kind: "video"; url: string; title: string; storageKey?: string; width?: number; height?: number };
 
 type Props = {
     open: boolean;
@@ -43,13 +45,21 @@ function PickerCard({ asset, onClick }: { asset: Asset; onClick: () => void }) {
                 )}
                 <div className="p-3">
                     <div className="flex items-start justify-between gap-2">
-                        <span title={asset.title} className="line-clamp-1 min-w-0 text-xs font-medium text-foreground">{asset.title}</span>
+                        <span title={asset.title} className="line-clamp-1 min-w-0 text-xs font-medium text-foreground">
+                            {asset.title}
+                        </span>
                         <Tag className="m-0 shrink-0 text-[10px]">{t(`assets.kinds.${asset.kind}`)}</Tag>
                     </div>
                     <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted [overflow-wrap:anywhere]">{summary}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                        <span title={asset.source || t("assets.unknownSource")} className="max-w-full truncate text-[10px] text-muted">{asset.source || t("assets.unknownSource")}</span>
-                        {asset.tags.slice(0, 2).map((tag) => <Tag key={tag} title={tag} className="m-0 max-w-full text-[10px]"><span className="truncate">{tag}</span></Tag>)}
+                        <span title={asset.source || t("assets.unknownSource")} className="max-w-full truncate text-[10px] text-muted">
+                            {asset.source || t("assets.unknownSource")}
+                        </span>
+                        {asset.tags.slice(0, 2).map((tag) => (
+                            <Tag key={tag} title={tag} className="m-0 max-w-full text-[10px]">
+                                <span className="truncate">{tag}</span>
+                            </Tag>
+                        ))}
                         {asset.tags.length > 2 ? <span className="text-[10px] text-muted">+{asset.tags.length - 2}</span> : null}
                     </div>
                 </div>
@@ -85,65 +95,70 @@ function MyAssetsTab({ onInsert }: { onInsert: (payload: InsertAssetPayload) => 
         if (asset.kind === "text") {
             onInsert({ kind: "text", content: asset.data.content, title: asset.title });
         } else {
-            onInsert(asset.kind === "video" ? { kind: "video", url: asset.data.url, storageKey: asset.data.storageKey, title: asset.title, width: asset.data.width, height: asset.data.height } : { kind: "image", dataUrl: asset.data.dataUrl, storageKey: asset.data.storageKey, title: asset.title });
+            onInsert(
+                asset.kind === "video"
+                    ? { kind: "video", url: asset.data.url, storageKey: asset.data.storageKey, title: asset.title, width: asset.data.width, height: asset.data.height }
+                    : { kind: "image", dataUrl: asset.data.dataUrl, storageKey: asset.data.storageKey, title: asset.title },
+            );
         }
     };
 
     return (
-        <div className="grid h-[min(72dvh,760px)] min-h-0 gap-8 py-2 sm:grid-cols-[190px_minmax(0,1fr)]">
-            <aside className="thin-scrollbar min-w-0 overflow-y-auto border-b border-border pb-4 sm:border-r sm:border-b-0 sm:pb-0 sm:pr-5">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">{t("assets.type")}</div>
-                <div className="flex flex-wrap gap-1.5 sm:flex-col sm:items-stretch">
-                    {kindOptions.map((option) => (
-                        <Tag.CheckableTag
-                            key={option}
-                            checked={kindFilter === option}
-                            className={cn("justify-start", "prompt-filter-tag", kindFilter === option && "is-active")}
-                            onChange={() => {
-                                setPage(1);
-                                setKindFilter(option);
-                            }}
-                        >
-                            {option === "all" ? t("common.all") : t(`assets.kinds.${option}`)}
-                        </Tag.CheckableTag>
-                    ))}
+        <div className="flex h-[min(72dvh,760px)] min-h-0 flex-col py-2">
+            <div role="search" aria-label={t("canvas.assetPicker.search")} className="flex flex-wrap items-center gap-3">
+                <div className="min-w-0 basis-64 flex-1 sm:max-w-md">
+                    <Input
+                        className="studio-search w-full"
+                        prefix={<Search className="size-4 text-muted" />}
+                        placeholder={t("canvas.assetPicker.search")}
+                        value={keyword}
+                        allowClear
+                        onChange={(e) => {
+                            setPage(1);
+                            setKeyword(e.target.value);
+                        }}
+                    />
                 </div>
-            </aside>
-
-            <section className="flex min-h-0 min-w-0 flex-col">
-                <Input
-                    className="w-full"
-                    size="small"
-                    prefix={<Search className="size-3.5 text-muted" />}
-                    placeholder={t("canvas.assetPicker.search")}
-                    value={keyword}
-                    allowClear
-                    onChange={(e) => {
+                <Tabs
+                    selectedKey={kindFilter}
+                    onSelectionChange={(key) => {
                         setPage(1);
-                        setKeyword(e.target.value);
+                        setKindFilter(key as (typeof kindOptions)[number]);
                     }}
-                />
-
-                <div className="thin-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-                    {visible.length ? (
-                        <div className="columns-1 gap-4 sm:columns-2 lg:columns-5">
-                            {visible.map((asset) => (
-                                <div key={asset.id} className="mb-4 break-inside-avoid">
-                                    <PickerCard asset={asset} onClick={() => handleInsert(asset)} />
-                                </div>
+                    className="min-w-0"
+                >
+                    <Tabs.ListContainer className="h-10">
+                        <Tabs.List aria-label={t("assets.type")} className="grid h-full grid-cols-4">
+                            {kindOptions.map((option) => (
+                                <Tabs.Tab key={option} id={option} className="justify-center px-3">
+                                    {option === "all" ? t("common.all") : t(`assets.kinds.${option}`)}
+                                    <Tabs.Indicator />
+                                </Tabs.Tab>
                             ))}
-                        </div>
-                    ) : (
-                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t("canvas.assetPicker.empty")} className="h-full py-12" />
-                    )}
-                </div>
+                        </Tabs.List>
+                    </Tabs.ListContainer>
+                </Tabs>
+            </div>
 
-                {filtered.length > PAGE_SIZE && (
-                    <div className="mt-4 flex justify-center">
-                        <Pagination size="small" current={page} pageSize={PAGE_SIZE} total={filtered.length} onChange={setPage} showSizeChanger={false} />
+            <div className="thin-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+                {visible.length ? (
+                    <div className="columns-1 gap-4 sm:columns-2 lg:columns-5">
+                        {visible.map((asset) => (
+                            <div key={asset.id} className="mb-4 break-inside-avoid">
+                                <PickerCard asset={asset} onClick={() => handleInsert(asset)} />
+                            </div>
+                        ))}
                     </div>
+                ) : (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t("canvas.assetPicker.empty")} className="h-full py-12" />
                 )}
-            </section>
+            </div>
+
+            {filtered.length > PAGE_SIZE && (
+                <div className="mt-4 flex justify-center">
+                    <Pagination size="small" current={page} pageSize={PAGE_SIZE} total={filtered.length} onChange={setPage} showSizeChanger={false} />
+                </div>
+            )}
         </div>
     );
 }

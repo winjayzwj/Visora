@@ -493,3 +493,10 @@ export function withLocalProxy(url: string) {
     if (!base || url.startsWith(`${base}/`)) return url;
     return `${base}/${url}`;
 }
+
+/** Local Vite uses a same-origin relay for model discovery when no explicit proxy is enabled. */
+export function withModelListRelay(url: string) {
+    const { proxyEnabled } = useConfigStore.getState().config;
+    if (proxyEnabled || !import.meta.env.DEV || typeof window === "undefined") return url;
+    return `/__visora_model_proxy__?url=${encodeURIComponent(url)}`;
+}
